@@ -28,6 +28,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from './ui/slider';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const gptSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
@@ -39,6 +46,8 @@ const gptSchema = z.object({
 });
 
 type GptFormValues = z.infer<typeof gptSchema>;
+
+const tones = ['neutral', 'amistoso', 'formal', 'técnico', 'creativo', 'profesional', 'imaginativo'];
 
 interface ManageGptsProps {
   gpt?: CustomGpt;
@@ -181,9 +190,20 @@ export function ManageGpts({ gpt, children }: ManageGptsProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Tono</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ej: Profesional, Amistoso" {...field} />
-                  </FormControl>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona un tono para la IA" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {tones.map((t) => (
+                        <SelectItem key={t} value={t}>
+                          {t.charAt(0).toUpperCase() + t.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

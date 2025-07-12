@@ -79,8 +79,8 @@ const CUSTOM_GPTS_STORAGE_KEY = 'matrix_ai_custom_gpts';
 
 const defaultGpts: CustomGpt[] = [
     { id: 'general-assistant', name: 'Asistente General', description: 'Un asistente versátil para tareas cotidianas.', systemPrompt: 'Eres un asistente de IA general, útil y amigable.', temperature: 0.7, maxLength: 500, tone: 'neutral' },
-    { id: 'code-helper', name: 'Asistente de Código', description: 'Optimizado para generar y depurar código.', systemPrompt: 'Eres un programador experto. Proporciona código claro, eficiente y bien documentado. Piensa paso a paso y explica tus soluciones.', temperature: 0.5, maxLength: 1500, tone: 'technical' },
-    { id: 'creative-writer', name: 'Redactor Creativo', description: 'Ideal para brainstorming y escritura creativa.', systemPrompt: 'Eres un escritor creativo y un experto en brainstorming. Genera ideas originales, imaginativas y fuera de lo común.', temperature: 0.9, maxLength: 1000, tone: 'imaginative' },
+    { id: 'code-helper', name: 'Asistente de Código', description: 'Optimizado para generar y depurar código.', systemPrompt: 'Eres un programador experto. Proporciona código claro, eficiente y bien documentado. Piensa paso a paso y explica tus soluciones.', temperature: 0.5, maxLength: 1500, tone: 'técnico' },
+    { id: 'creative-writer', name: 'Redactor Creativo', description: 'Ideal para brainstorming y escritura creativa.', systemPrompt: 'Eres un escritor creativo y un experto en brainstorming. Genera ideas originales, imaginativas y fuera de lo común.', temperature: 0.9, maxLength: 1000, tone: 'imaginativo' },
 ];
 
 const defaultFolders: Folder[] = [

@@ -18,6 +18,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useChat } from '@/context/chat-context';
 import { Settings } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const modelParametersSchema = z.object({
   temperature: z.number().min(0).max(1).default(0.7),
@@ -26,6 +33,8 @@ const modelParametersSchema = z.object({
 });
 
 type ModelParametersFormValues = z.infer<typeof modelParametersSchema>;
+
+const tones = ['neutral', 'amistoso', 'formal', 'técnico', 'creativo', 'profesional', 'imaginativo'];
 
 export function ModelParameters() {
   const { currentPreset, setCurrentPreset } = useChat();
@@ -94,11 +103,21 @@ export function ModelParameters() {
             <Label htmlFor="tone" className="text-right">
               Tono
             </Label>
-            <Input
-              id="tone"
-              {...form.register("tone")}
-              className="col-span-3 bg-input text-foreground border-input focus-visible:ring-ring"
-            />
+            <Select
+              value={form.watch('tone')}
+              onValueChange={(value) => form.setValue('tone', value, { shouldValidate: true })}
+            >
+              <SelectTrigger id="tone" className="col-span-3 bg-input text-foreground border-input focus-visible:ring-ring">
+                <SelectValue placeholder="Seleccionar tono" />
+              </SelectTrigger>
+              <SelectContent>
+                {tones.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {form.formState.errors.tone && (
               <p className="col-span-4 text-destructive text-sm">{form.formState.errors.tone.message}</p>
             )}
