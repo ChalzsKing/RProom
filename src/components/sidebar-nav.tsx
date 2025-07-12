@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Folder, Briefcase, MessageSquare, PlusCircle, Plus, Brain, Sparkles, Pencil } from 'lucide-react';
+import { Folder, Briefcase, MessageSquare, PlusCircle, Plus, Brain, Sparkles, Pencil, RotateCcw } from 'lucide-react';
 import { useChat } from '@/context/chat-context';
 import { cn } from '@/lib/utils';
 import {
@@ -22,6 +22,7 @@ export function SidebarNav() {
   } = useChat();
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'folder' | 'project' | 'chat'>('folder');
   const [dialogContext, setDialogContext] = useState<string>(''); // folderId or projectId
   const [newName, setNewName] = useState("");
@@ -55,6 +56,13 @@ export function SidebarNav() {
       else if (dialogMode === 'chat') addChat(dialogContext, newName.trim());
       setDialogOpen(false);
     }
+  };
+
+  const handleResetApp = () => {
+    localStorage.removeItem('matrix_ai_chat_histories');
+    localStorage.removeItem('matrix_ai_folders');
+    localStorage.removeItem('matrix_ai_custom_gpts');
+    window.location.reload();
   };
 
   const getDialogTitle = () => {
@@ -181,6 +189,12 @@ export function SidebarNav() {
             ))}
           </nav>
         </div>
+        <div className="mt-auto border-t border-border pt-4">
+          <Button variant="outline" className="w-full justify-start" onClick={() => setResetDialogOpen(true)}>
+            <RotateCcw className="mr-2 h-4 w-4" />
+            <span>Restablecer Aplicación</span>
+          </Button>
+        </div>
       </div>
 
       <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -194,6 +208,23 @@ export function SidebarNav() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleCreate} className="bg-primary text-primary-foreground hover:bg-primary/90">Crear</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <AlertDialogContent className="bg-background border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-foreground">¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              Esta acción es irreversible. Se eliminarán todas tus carpetas, proyectos, conversaciones y GPTs personalizados. La aplicación volverá a su estado inicial.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleResetApp} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Sí, restablecer
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
