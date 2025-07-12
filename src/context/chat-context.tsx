@@ -51,6 +51,9 @@ export interface Campaign {
 
 type ChatHistories = Record<string, Message[]>; // Keyed by session ID
 
+export type SceneControl = 'player' | 'ai' | 'absent';
+export type SceneStates = Record<string, Record<string, SceneControl>>; // sessionID -> characterID -> control
+
 // --- Tipo del Contexto ---
 interface ChatContextType {
   activeProvider: string;
@@ -79,6 +82,9 @@ interface ChatContextType {
   messages: Message[];
   addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => void;
   clearMessages: () => void;
+
+  sceneStates: SceneStates;
+  updateSceneState: (sessionId: string, characterId: string, control: SceneControl) => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -87,6 +93,7 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 const CHAT_HISTORY_STORAGE_KEY = 'rp_chat_histories';
 const CAMPAIGNS_STORAGE_KEY = 'rp_campaigns';
 const NARRATORS_STORAGE_KEY = 'rp_narrators';
+const SCENE_STATES_STORAGE_KEY = 'rp_scene_states';
 
 const defaultNarrators: Narrator[] = [
     { id: 'dungeon-master', name: 'Dungeon Master', description: 'Un narrador clásico para aventuras de fantasía.', systemPrompt: 'Eres un maestro de ceremonias para un juego de rol de fantasía. Describes escenarios vívidos, interpretas a personajes no jugadores y reaccionas a las acciones del usuario para tejer una historia colaborativa e inmersiva. Tu tono es épico y descriptivo.', temperature: 0.8, maxLength: 1200, tone: 'narrativo' },
@@ -121,6 +128,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [chatHistories, setChatHistories] = useState<ChatHistories>({});
   const [narrators, setNarrators] = useState<Narrator[]>([]);
   const [activeNarrator, setActiveNarratorState] = useState<Narrator>(defaultNarrators[0]);
+  const [sceneStates, setSceneStates] = useState<SceneStates>({});
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -128,10 +136,10 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       const savedCampaigns = window.localStorage.getItem(CAMPAIGNS_STORAGE_KEY);
       const savedHistories = window.localStorage.getItem(CHAT_HISTORY_STORAGE_KEY);
       const savedNarrators = window.localStorage.getItem(NARRATORS_STORAGE_KEY);
+      const savedSceneStates = window.localStorage.getItem(SCENE_STATES_STORAGE_KEY);
 
       let loadedCampaigns = savedCampaigns ? JSON.parse(savedCampaigns) : defaultCampaigns;
       
-      // Migración: Asegurarse de que cada campaña tenga una lista de personajes
       loadedCampaigns = loadedCampaigns.map((campaign: any) => ({
         ...campaign,
         playerCharacters: campaign.playerCharacters || [],
@@ -162,6 +170,9 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       }
       setChatHistories(loadedHistories);
 
+      const loadedSceneStates = savedSceneStates ? JSON.parse(savedSceneStates) : {};
+      setSceneStates(loadedSceneStates);
+
       if (activeSessionId === null && firstSessionId) {
         setActiveSessionId(firstSessionId);
       }
@@ -186,8 +197,16 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       window.localStorage.setItem(CAMPAIGNS_STORAGE_KEY, JSON.stringify(campaigns));
       window.localStorage.setItem(CHAT_HISTORY_STORAGE_KEY, JSON.stringify(chatHistories));
       window.localStorage.setItem(NARRATORS_STORAGE_KEY, JSON.stringify(narrators));
+      window.localStorage.setItem(SCENE_STATES_STORAGE_KEY, JSON.stringify(sceneStates));
     }
-  }, [campaigns, chatHistories, narrators, isLoaded]);
+  }, [campaigns, chatHistories, narrators, sceneStates, isLoaded]);
+
+  const updateSceneState = (sessionId: string, characterId: string, control: SceneControl) => {
+    setSceneStates(prev => {
+      const newSessionState = { ...(prev[sessionId] || {}), [characterId]: control };
+      return { ...prev, [sessionId]: newSessionState };
+    });
+  };
 
   const setActiveNarrator = (narratorId: string) => {
     const selectedNarrator = narrators.find(n => n.id === narratorId);
@@ -306,6 +325,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       playerCharacters, addPlayerCharacter, updatePlayerCharacter,
       messages: activeSessionId ? chatHistories[activeSessionId] || [] : [],
       addMessage, clearMessages,
+      sceneStates, updateSceneState,
     }}>
       {children}
     </ChatContext.Provider>

@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Send, RefreshCw, User } from 'lucide-react';
+import { Send, RefreshCw, User, Users } from 'lucide-react';
 import { useChat } from '@/context/chat-context';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -13,11 +13,13 @@ import { ThemeSwitcher } from './theme-switcher';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ManageScene } from './manage-scene';
 
 export function ChatWindow() {
   const {
     activeProvider, getActiveSession, getActiveAdventure, getActiveCampaign,
-    messages, addMessage, clearMessages, activeNarrator, playerCharacters
+    messages, addMessage, clearMessages, activeNarrator, playerCharacters,
+    activeSessionId, sceneStates
   } = useChat();
   
   const [inputMessage, setInputMessage] = useState('');
@@ -42,7 +44,7 @@ export function ChatWindow() {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputMessage.trim() || isThinking) return;
+    if (!inputMessage.trim() || isThinking || !activeSessionId) return;
 
     const userMessageContent = inputMessage;
     
@@ -70,6 +72,13 @@ export function ChatWindow() {
       apiMessages.push({ role: 'user', content: userMessageContent });
 
       const adventurePremise = activeAdventure?.premise || '';
+      
+      const currentSceneState = sceneStates[activeSessionId] || {};
+      const sceneCharacters = playerCharacters.map(pc => ({
+        ...pc,
+        control: currentSceneState[pc.id] || 'player',
+      })).filter(pc => pc.control !== 'absent');
+
       const finalSystemPrompt = `CONTEXTO DE LA AVENTURA: ${adventurePremise}\n\nINSTRUCCIONES DEL NARRADOR: ${activeNarrator.systemPrompt}`;
 
       const response = await fetch('/api/chat', {
@@ -82,6 +91,7 @@ export function ChatWindow() {
           maxLength: activeNarrator.maxLength,
           tone: activeNarrator.tone,
           systemPrompt: finalSystemPrompt,
+          sceneCharacters: sceneCharacters,
         }),
       });
 
@@ -129,9 +139,12 @@ export function ChatWindow() {
           {chatTitle}
         </h2>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground hidden sm:inline">
-            Narrador: {activeNarrator.name}
-          </span>
+          <ManageScene>
+            <Button variant="ghost" size="icon" className="text-foreground hover:text-primary">
+              <Users className="h-5 w-5" />
+              <span className="sr-only">Gestionar Escena</span>
+            </Button>
+          </ManageScene>
           <ThemeSwitcher />
           <Button variant="ghost" size="icon" className="text-foreground hover:text-primary" onClick={handleNewChat}>
             <RefreshCw className="h-5 w-5" />
