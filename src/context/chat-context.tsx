@@ -63,6 +63,7 @@ interface ChatContextType {
   setActiveGpt: (gptId: string) => void;
   customGpts: CustomGpt[];
   addCustomGpt: (gpt: Omit<CustomGpt, 'id'>) => void;
+  updateCustomGpt: (gptId: string, gptData: Omit<CustomGpt, 'id' | 'systemPrompt'> & { systemPrompt: string }) => void;
   messages: Message[];
   addMessage: (role: 'user' | 'assistant', content: string) => void;
   clearMessages: () => void;
@@ -109,7 +110,6 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     try {
-      // Cargar carpetas, historiales y GPTs personalizados
       const savedFolders = window.localStorage.getItem(FOLDERS_STORAGE_KEY);
       const savedHistories = window.localStorage.getItem(CHAT_HISTORY_STORAGE_KEY);
       const savedGpts = window.localStorage.getItem(CUSTOM_GPTS_STORAGE_KEY);
@@ -176,6 +176,13 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     const newGpt: CustomGpt = { ...gptData, id: `gpt-${Date.now()}` };
     setCustomGpts(prev => [...prev, newGpt]);
     toast.success(`GPT Personalizado "${newGpt.name}" creado.`);
+  };
+
+  const updateCustomGpt = (gptId: string, gptData: Omit<CustomGpt, 'id' | 'systemPrompt'> & { systemPrompt: string }) => {
+    setCustomGpts(prev =>
+      prev.map(gpt => (gpt.id === gptId ? { ...gpt, ...gptData } : gpt))
+    );
+    toast.success(`GPT Personalizado "${gptData.name}" actualizado.`);
   };
 
   const addFolder = (folderName: string) => {
@@ -250,7 +257,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       getActiveChat, getActiveProject, getActiveFolder,
       currentPreset, setCurrentPreset,
       activeGpt, setActiveGpt,
-      customGpts, addCustomGpt,
+      customGpts, addCustomGpt, updateCustomGpt,
       messages: activeChatId ? chatHistories[activeChatId] || [] : [],
       addMessage, clearMessages,
     }}>

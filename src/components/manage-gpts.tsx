@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -27,7 +27,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { PlusCircle } from 'lucide-react';
 import { Slider } from './ui/slider';
 
 const gptSchema = z.object({
@@ -39,13 +38,21 @@ const gptSchema = z.object({
   tone: z.string().min(2, 'El tono debe tener al menos 2 caracteres.'),
 });
 
-export function ManageGpts() {
-  const { addCustomGpt } = useChat();
-  const [open, setOpen] = useState(false);
+type GptFormValues = z.infer<typeof gptSchema>;
 
-  const form = useForm<z.infer<typeof gptSchema>>({
+interface ManageGptsProps {
+  gpt?: CustomGpt;
+  children: React.ReactNode;
+}
+
+export function ManageGpts({ gpt, children }: ManageGptsProps) {
+  const { addCustomGpt, updateCustomGpt } = useChat();
+  const [open, setOpen] = useState(false);
+  const isEditMode = !!gpt;
+
+  const form = useForm<GptFormValues>({
     resolver: zodResolver(gptSchema),
-    defaultValues: {
+    defaultValues: gpt || {
       name: '',
       description: '',
       systemPrompt: '',
@@ -55,25 +62,38 @@ export function ManageGpts() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof gptSchema>) {
-    addCustomGpt(values);
-    form.reset();
+  useEffect(() => {
+    if (gpt) {
+      form.reset(gpt);
+    } else {
+      form.reset({
+        name: '',
+        description: '',
+        systemPrompt: '',
+        temperature: 0.7,
+        maxLength: 500,
+        tone: 'neutral',
+      });
+    }
+  }, [gpt, form, open]);
+
+  function onSubmit(values: GptFormValues) {
+    if (isEditMode && gpt) {
+      updateCustomGpt(gpt.id, values);
+    } else {
+      addCustomGpt(values);
+    }
     setOpen(false);
   }
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary">
-          <PlusCircle className="h-4 w-4" />
-          <span className="sr-only">Crear GPT Personalizado</span>
-        </Button>
-      </SheetTrigger>
+      <SheetTrigger asChild>{children}</SheetTrigger>
       <SheetContent className="w-[400px] sm:w-[540px] bg-background text-foreground border-l border-border">
         <SheetHeader>
-          <SheetTitle>Crear GPT Personalizado</SheetTitle>
+          <SheetTitle>{isEditMode ? 'Editar' : 'Crear'} GPT Personalizado</SheetTitle>
           <SheetDescription>
-            Define el comportamiento, conocimiento y estilo de tu propio asistente de IA.
+            {isEditMode ? 'Modifica los detalles de tu asistente de IA.' : 'Define el comportamiento, conocimiento y estilo de tu propio asistente de IA.'}
           </SheetDescription>
         </SheetHeader>
         <Form {...form}>
@@ -172,7 +192,7 @@ export function ManageGpts() {
                 <SheetClose asChild>
                     <Button type="button" variant="ghost">Cancelar</Button>
                 </SheetClose>
-              <Button type="submit">Crear GPT</Button>
+              <Button type="submit">{isEditMode ? 'Guardar Cambios' : 'Crear GPT'}</Button>
             </SheetFooter>
           </form>
         </Form>

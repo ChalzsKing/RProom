@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Folder, Briefcase, MessageSquare, PlusCircle, Plus, Brain, Sparkles } from 'lucide-react';
+import { Folder, Briefcase, MessageSquare, PlusCircle, Plus, Brain, Sparkles, Pencil } from 'lucide-react';
 import { useChat } from '@/context/chat-context';
 import { cn } from '@/lib/utils';
 import {
@@ -147,14 +147,28 @@ export function SidebarNav() {
 
             <div className="mt-4 flex items-center justify-between px-3 py-2">
               <span className="text-xs font-semibold text-muted-foreground">GPTs Personalizados</span>
-              <ManageGpts />
+              <ManageGpts>
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary">
+                  <PlusCircle className="h-4 w-4" />
+                  <span className="sr-only">Crear GPT Personalizado</span>
+                </Button>
+              </ManageGpts>
             </div>
             {customGpts.map((gpt) => (
-              <a key={gpt.id} href="#" onClick={(e) => { e.preventDefault(); setActiveGpt(gpt.id); }}
-                className={cn("flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary",
-                  activeGpt.id === gpt.id ? "bg-accent text-accent-foreground" : "text-foreground")}>
-                <Sparkles className="h-4 w-4" />{gpt.name}
-              </a>
+              <div key={gpt.id} className="flex items-center justify-between rounded-lg hover:bg-accent/50 group">
+                <a href="#" onClick={(e) => { e.preventDefault(); setActiveGpt(gpt.id); }}
+                  className={cn("flex-1 flex items-center gap-3 rounded-lg px-3 py-2 transition-all",
+                    activeGpt.id === gpt.id ? "bg-accent text-accent-foreground" : "text-foreground group-hover:text-primary")}>
+                  <Sparkles className="h-4 w-4" />
+                  <span className="truncate flex-1">{gpt.name}</span>
+                </a>
+                <ManageGpts gpt={gpt}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 mr-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Pencil className="h-4 w-4" />
+                    <span className="sr-only">Editar GPT</span>
+                  </Button>
+                </ManageGpts>
+              </div>
             ))}
 
             <div className="mt-4 px-3 py-2 text-xs font-semibold text-muted-foreground">Proveedores de IA</div>
