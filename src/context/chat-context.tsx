@@ -129,7 +129,14 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       const savedHistories = window.localStorage.getItem(CHAT_HISTORY_STORAGE_KEY);
       const savedNarrators = window.localStorage.getItem(NARRATORS_STORAGE_KEY);
 
-      const loadedCampaigns = savedCampaigns ? JSON.parse(savedCampaigns) : defaultCampaigns;
+      let loadedCampaigns = savedCampaigns ? JSON.parse(savedCampaigns) : defaultCampaigns;
+      
+      // Migración: Asegurarse de que cada campaña tenga una lista de personajes
+      loadedCampaigns = loadedCampaigns.map((campaign: any) => ({
+        ...campaign,
+        playerCharacters: campaign.playerCharacters || [],
+      }));
+      
       setCampaigns(loadedCampaigns);
 
       const loadedNarrators = savedNarrators ? JSON.parse(savedNarrators) : defaultNarrators;
