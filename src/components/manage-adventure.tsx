@@ -27,6 +27,9 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Sparkles, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const adventureSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres.'),
@@ -36,33 +39,68 @@ const adventureSchema = z.object({
 type AdventureFormValues = z.infer<typeof adventureSchema>;
 
 interface ManageAdventureProps {
-  adventure: Adventure;
+  adventure?: Adventure;
+  campaignId?: string;
   children: React.ReactNode;
 }
 
-export function ManageAdventure({ adventure, children }: ManageAdventureProps) {
-  const { updateAdventure } = useChat();
+export function ManageAdventure({ adventure, campaignId, children }: ManageAdventureProps) {
+  const { addAdventure, updateAdventure } = useChat();
   const [open, setOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const isEditMode = !!adventure;
 
   const form = useForm<AdventureFormValues>({
     resolver: zodResolver(adventureSchema),
-    defaultValues: {
-      name: adventure.name,
-      premise: adventure.premise,
+    defaultValues: adventure || {
+      name: '',
+      premise: '',
     },
   });
 
   useEffect(() => {
     if (open) {
-      form.reset({
-        name: adventure.name,
-        premise: adventure.premise,
-      });
+      form.reset(adventure || { name: '', premise: '' });
+      setAiPrompt('');
     }
   }, [adventure, form, open]);
 
+  const handleGenerate = async () => {
+    if (!aiPrompt.trim()) {
+      toast.warning('Por favor, introduce una idea para la aventura.');
+      return;
+    }
+    setIsGenerating(true);
+    try {
+      const response = await fetch('/api/generate-adventure', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: aiPrompt }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al generar la aventura');
+      }
+
+      const data = await response.json();
+      form.setValue('name', data.name, { shouldValidate: true });
+      form.setValue('premise', data.premise, { shouldValidate: true });
+      toast.success('¡Aventura generada con éxito!');
+    } catch (error: any) {
+      toast.error(`Error: ${error.message}`);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   function onSubmit(values: AdventureFormValues) {
-    updateAdventure(adventure.id, values);
+    if (isEditMode && adventure) {
+      updateAdventure(adventure.id, values);
+    } else if (campaignId) {
+      addAdventure(campaignId, values);
+    }
     setOpen(false);
   }
 
@@ -71,11 +109,34 @@ export function ManageAdventure({ adventure, children }: ManageAdventureProps) {
       <SheetTrigger asChild>{children}</SheetTrigger>
       <SheetContent className="w-[400px] sm:w-[540px] bg-background text-foreground border-l border-border">
         <SheetHeader>
-          <SheetTitle>Editar Aventura</SheetTitle>
+          <SheetTitle>{isEditMode ? 'Editar' : 'Crear'} Aventura</SheetTitle>
           <SheetDescription>
-            Modifica el nombre y la premisa de la aventura. La premisa sirve como contexto constante para la IA.
+            {isEditMode
+              ? 'Modifica el nombre y la premisa de la aventura. La premisa sirve como contexto constante para la IA.'
+              : 'Crea una nueva aventura, manualmente o con la ayuda de la IA.'}
           </SheetDescription>
         </SheetHeader>
+
+        {!isEditMode && (
+          <div className="my-4 space-y-2 p-4 border rounded-lg bg-secondary/50">
+            <Label htmlFor="ai-prompt" className="flex items-center gap-2 font-semibold">
+              <Sparkles className="h-4 w-4 text-primary" />
+              Generar con IA
+            </Label>
+            <Textarea
+              id="ai-prompt"
+              placeholder="Idea de la aventura, ej: 'una ciudad submarina perdida y una antigua maldición'"
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              className="resize-y"
+            />
+            <Button onClick={handleGenerate} disabled={isGenerating} className="w-full">
+              {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+              Generar Aventura
+            </Button>
+          </div>
+        )}
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
             <FormField
@@ -85,7 +146,7 @@ export function ManageAdventure({ adventure, children }: ManageAdventureProps) {
                 <FormItem>
                   <FormLabel>Nombre de la Aventura</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ej: La Cueva del Goblin" {...field} />
+                    <Input placeholder="Ej: La Ciudad bajo las Olas" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -99,7 +160,7 @@ export function ManageAdventure({ adventure, children }: ManageAdventureProps) {
                   <FormLabel>Premisa / Contexto</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Los jugadores han sido contratados para..."
+                      placeholder="Hace siglos, la ciudad de Aquaria fue consumida por el océano..."
                       className="resize-y min-h-[200px]"
                       {...field}
                     />
@@ -115,7 +176,7 @@ export function ManageAdventure({ adventure, children }: ManageAdventureProps) {
                 <SheetClose asChild>
                     <Button type="button" variant="ghost">Cancelar</Button>
                 </SheetClose>
-              <Button type="submit">Guardar Cambios</Button>
+              <Button type="submit">{isEditMode ? 'Guardar Cambios' : 'Crear Aventura'}</Button>
             </SheetFooter>
           </form>
         </Form>

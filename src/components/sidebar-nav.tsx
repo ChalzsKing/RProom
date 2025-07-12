@@ -18,7 +18,7 @@ import { ManageAdventure } from './manage-adventure';
 export function SidebarNav() {
   const {
     activeProvider, setActiveProvider,
-    campaigns, addCampaign, addAdventure, addSession,
+    campaigns, addCampaign, addSession,
     activeSessionId, setActiveSessionId, getActiveAdventure,
     narrators, activeNarrator, setActiveNarrator,
     playerCharacters
@@ -26,7 +26,7 @@ export function SidebarNav() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
-  const [dialogMode, setDialogMode] = useState<'campaign' | 'adventure' | 'session'>('campaign');
+  const [dialogMode, setDialogMode] = useState<'campaign' | 'session'>('campaign');
   const [dialogContext, setDialogContext] = useState<string>(''); // campaignId or adventureId
   const [newName, setNewName] = useState("");
   
@@ -45,7 +45,7 @@ export function SidebarNav() {
     }
   }, [campaigns, activeSessionId, getActiveAdventure]);
 
-  const openDialog = (mode: 'campaign' | 'adventure' | 'session', context = '') => {
+  const openDialog = (mode: 'campaign' | 'session', context = '') => {
     setDialogMode(mode);
     setDialogContext(context);
     setNewName("");
@@ -55,7 +55,6 @@ export function SidebarNav() {
   const handleCreate = () => {
     if (newName.trim()) {
       if (dialogMode === 'campaign') addCampaign(newName.trim());
-      else if (dialogMode === 'adventure') addAdventure(dialogContext, newName.trim());
       else if (dialogMode === 'session') addSession(dialogContext, newName.trim());
       setDialogOpen(false);
     }
@@ -68,7 +67,6 @@ export function SidebarNav() {
 
   const getDialogTitle = () => {
     if (dialogMode === 'campaign') return 'Crear Nueva Campaña';
-    if (dialogMode === 'adventure') return 'Crear Nueva Aventura';
     return 'Crear Nueva Sesión';
   };
 
@@ -98,15 +96,17 @@ export function SidebarNav() {
                         <span>{campaign.name}</span>
                       </div>
                     </AccordionTrigger>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 mr-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent"
-                      onClick={(e) => { e.stopPropagation(); openDialog('adventure', campaign.id); }}
-                    >
-                      <Plus className="h-4 w-4" />
-                      <span className="sr-only">Nueva Aventura</span>
-                    </Button>
+                    <ManageAdventure campaignId={campaign.id}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 mr-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent"
+                        onClick={(e) => { e.stopPropagation(); }}
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span className="sr-only">Nueva Aventura</span>
+                      </Button>
+                    </ManageAdventure>
                   </div>
                   <AccordionContent className="pl-4 pt-1">
                     <Accordion type="multiple" className="w-full" value={openAdventures} onValueChange={setOpenAdventures}>

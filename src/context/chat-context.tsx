@@ -56,7 +56,7 @@ interface ChatContextType {
   setActiveProvider: (provider: string) => void;
   campaigns: Campaign[];
   addCampaign: (campaignName: string) => void;
-  addAdventure: (campaignId: string, adventureName: string) => void;
+  addAdventure: (campaignId: string, adventureData: { name: string; premise: string }) => void;
   updateAdventure: (adventureId: string, adventureData: Omit<Adventure, 'id' | 'sessions'>) => void;
   addSession: (adventureId: string, sessionName: string) => void;
   activeSessionId: string | null;
@@ -230,12 +230,12 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     toast.success(`Campaña "${campaignName}" creada.`);
   };
 
-  const addAdventure = (campaignId: string, adventureName: string) => {
-    const newAdventure: Adventure = { id: `adventure-${Date.now()}`, name: adventureName, premise: 'Describe aquí la premisa de la aventura...', sessions: [] };
+  const addAdventure = (campaignId: string, adventureData: { name: string; premise: string }) => {
+    const newAdventure: Adventure = { ...adventureData, id: `adventure-${Date.now()}`, sessions: [] };
     setCampaigns(prev =>
       prev.map(c => c.id === campaignId ? { ...c, adventures: [...c.adventures, newAdventure] } : c)
     );
-    toast.success(`Aventura "${adventureName}" creada.`);
+    toast.success(`Aventura "${adventureData.name}" creada.`);
   };
 
   const updateAdventure = (adventureId: string, adventureData: Omit<Adventure, 'id' | 'sessions'>) => {
