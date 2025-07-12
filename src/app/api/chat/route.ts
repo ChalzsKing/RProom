@@ -143,7 +143,7 @@ export async function POST(req: Request) {
       }
     }
     
-    const optionsPrompt = "\n\nREGLA OBLIGATORIA: Al final de CADA UNA de tus respuestas, DEBES proponer exactamente 4 opciones de acción claras y distintas para que el jugador elija. Numéralas del 1 al 4. Estas opciones deben ser acciones concretas que el personaje del jugador puede tomar en la situación actual.";
+    const optionsPrompt = "\n\nREGLA CRÍTICA Y OBLIGATORIA: Es absolutamente esencial que al final de CADA UNA de tus respuestas, sin excepción, propongas una lista numerada de exactamente 4 opciones de acción para el jugador. Deben ser acciones concretas y diferentes entre sí. Formatea la lista así:\n1. [Opción 1]\n2. [Opción 2]\n3. [Opción 3]\n4. [Opción 4]\nEl incumplimiento de esta regla arruina la experiencia del juego.";
 
     finalSystemPrompt = sceneControlPrompt + finalSystemPrompt + optionsPrompt;
     // --- Fin de la construcción del Prompt ---
