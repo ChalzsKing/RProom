@@ -101,6 +101,9 @@ importers:
       date-fns:
         specifier: ^3.6.0
         version: 3.6.0
+      deepseek:
+        specifier: ^0.0.2
+        version: 0.0.2
       embla-carousel-react:
         specifier: ^8.6.0
         version: 8.6.0(react@19.1.0)
@@ -1347,6 +1350,9 @@ packages:
 
   decimal.js-light@2.5.1:
     resolution: {integrity: sha512-qIMFpTMZmny+MMIitAB6D7iVPEorVw6YQRWkvarTkT4tBeSLLiHzcwj6q0MmYSFCiVpiqPJTJEYIrpcPzVEIvg==}
+
+  deepseek@0.0.2:
+    resolution: {integrity: sha512-NBLowRxXm9baloPOEzu7dokwoMSwQNBbQj9LqL0QzAS6az8A26jxB37XBjGF7oubsiU7HvrYGjUdnAWCnfEiAg==}
 
   detect-libc@2.0.4:
     resolution: {integrity: sha512-3UDv+G9CsCKO1WKMGw9fwq/SWJYbI0c5Y7LU1AXYoDdbhE2AHQ6N6Nb34sG8Fj7T5APy8qXDCKuuIHd1BR0tVA==}
@@ -3271,6 +3277,8 @@ snapshots:
   date-fns@3.6.0: {}
 
   decimal.js-light@2.5.1: {}
+
+  deepseek@0.0.2: {}
 
   detect-libc@2.0.4:
     optional: true

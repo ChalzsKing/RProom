@@ -9,7 +9,8 @@ import { ModelParameters } from './model-parameters';
 import { CustomGptSelector } from './custom-gpt-selector';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { cn } from '@/lib/utils'; // Importar cn para combinar clases
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner'; // Importar toast para notificaciones
 
 export function ChatWindow() {
   const { activeProvider, activeProject, activeGpt, currentPreset, messages, addMessage, clearMessages } = useChat();
@@ -26,13 +27,40 @@ export function ChatWindow() {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (inputMessage.trim()) {
-      addMessage('user', inputMessage);
+      const userMessageContent = inputMessage;
+      addMessage('user', userMessageContent);
       setInputMessage('');
       setIsThinking(true);
 
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      addMessage('assistant', `Entendido. Procesando tu solicitud con ${activeGpt.name} (Temp: ${currentPreset.temperature}, Len: ${currentPreset.maxLength}, Tono: ${currentPreset.tone}).`);
-      setIsThinking(false);
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messages: [...messages, { role: 'user', content: userMessageContent }],
+            // Aquí podrías pasar currentPreset para hacer los parámetros dinámicos
+            // temperature: currentPreset.temperature,
+            // maxLength: currentPreset.maxLength,
+            // tone: currentPreset.tone,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Error al obtener respuesta de la IA');
+        }
+
+        const data = await response.json();
+        addMessage('assistant', data.message);
+      } catch (error: any) {
+        console.error('Error al enviar mensaje:', error);
+        toast.error(`Error: ${error.message}`);
+        addMessage('assistant', 'Lo siento, hubo un error al procesar tu solicitud. Por favor, inténtalo de nuevo.');
+      } finally {
+        setIsThinking(false);
+      }
     }
   };
 
@@ -40,6 +68,7 @@ export function ChatWindow() {
     clearMessages();
     setInputMessage('');
     setIsThinking(false);
+    toast.info('Nuevo chat iniciado.');
   };
 
   return (
