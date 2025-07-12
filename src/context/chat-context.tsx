@@ -220,9 +220,9 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     setChatHistories(prev => ({ ...prev, [activeChatId]: [initialMessage] }));
   };
 
-  const getActiveChat = () => folders.flatMap(f => (f.projects || []).flatMap(p => p.chats || [])).find(c => c.id === activeChatId);
-  const getActiveProject = () => folders.flatMap(f => f.projects || []).find(p => (p.chats || []).some(c => c.id === activeChatId));
-  const getActiveFolder = () => folders.find(f => (f.projects || []).some(p => (p.chats || []).some(c => c.id === activeChatId)));
+  const getActiveChat = () => (folders || []).flatMap(f => (f.projects || []).flatMap(p => p.chats || [])).find(c => c.id === activeChatId);
+  const getActiveProject = () => (folders || []).flatMap(f => f.projects || []).find(p => (p.chats || []).some(c => c.id === activeChatId));
+  const getActiveFolder = () => (folders || []).find(f => (f.projects || []).some(p => (p.chats || []).some(c => c.id === activeChatId)));
 
   if (!isLoaded) {
     return <LoadingScreen />;

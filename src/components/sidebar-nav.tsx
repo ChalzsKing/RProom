@@ -30,10 +30,12 @@ export function SidebarNav() {
   const providers = ['DeepSeek', 'Gemini'];
 
   useEffect(() => {
-    setOpenFolders(folders.map(f => f.id));
-    const activeProject = getActiveProject();
-    if (activeProject) {
-      setOpenProjects(prev => [...new Set([...prev, activeProject.id])]);
+    if (folders) {
+      setOpenFolders(folders.map(f => f.id));
+      const activeProject = getActiveProject();
+      if (activeProject) {
+        setOpenProjects(prev => [...new Set([...prev, activeProject.id])]);
+      }
     }
   }, [folders, activeChatId, getActiveProject]);
 
@@ -76,7 +78,7 @@ export function SidebarNav() {
             </div>
 
             <Accordion type="multiple" className="w-full" value={openFolders} onValueChange={setOpenFolders}>
-              {folders.map((folder) => (
+              {(folders || []).map((folder) => (
                 <AccordionItem key={folder.id} value={folder.id} className="border-b-0">
                   <div className="flex items-center w-full rounded-md hover:bg-sidebar-accent/50 group">
                     <AccordionTrigger className="flex-1 px-3 py-2 text-left hover:no-underline">
@@ -88,7 +90,7 @@ export function SidebarNav() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6 mr-2 shrink-0 hover:bg-sidebar-accent"
+                      className="h-6 w-6 mr-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -113,7 +115,7 @@ export function SidebarNav() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 mr-2 shrink-0 hover:bg-sidebar-accent"
+                              className="h-6 w-6 mr-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
