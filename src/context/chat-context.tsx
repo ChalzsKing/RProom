@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import { toast } from 'sonner';
 
 interface Preset {
   temperature: number;
@@ -28,6 +29,8 @@ interface ChatContextType {
   setActiveProvider: (provider: string) => void;
   activeProject: string;
   setActiveProject: (project: string) => void;
+  projects: string[];
+  addProject: (projectName: string) => void;
   currentPreset: Preset;
   setCurrentPreset: (preset: Preset) => void;
   activeGpt: CustomGpt;
@@ -41,46 +44,61 @@ interface ChatContextType {
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 const initialMessage: Message = { id: '1', role: 'assistant', content: '¡Hola! ¿En qué puedo ayudarte hoy?', timestamp: new Date() };
-const initialHistories: ChatHistories = {
-  'Proyecto Alpha': [initialMessage],
-  'Cliente Beta': [initialMessage],
-};
-const STORAGE_KEY = 'matrix_ai_chat_histories';
+const CHAT_HISTORY_STORAGE_KEY = 'matrix_ai_chat_histories';
+const PROJECTS_STORAGE_KEY = 'matrix_ai_projects';
 
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [activeProvider, setActiveProvider] = useState<string>('DeepSeek');
-  const [activeProject, setActiveProject] = useState<string>('Proyecto Alpha');
-  
-  const [chatHistories, setChatHistories] = useState<ChatHistories>(() => {
-    // Cargar desde localStorage al inicio
-    if (typeof window === 'undefined') {
-      return initialHistories;
-    }
+
+  const [projects, setProjects] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return ['Proyecto Alpha'];
     try {
-      const savedHistories = window.localStorage.getItem(STORAGE_KEY);
-      if (savedHistories) {
-        const parsed = JSON.parse(savedHistories);
-        // Convertir timestamps de string a Date
-        Object.keys(parsed).forEach(project => {
-          parsed[project] = parsed[project].map((msg: any) => ({
-            ...msg,
-            timestamp: new Date(msg.timestamp),
-          }));
-        });
-        return parsed;
-      }
-    } catch (error) {
-      console.error("Error al cargar el historial del chat desde localStorage", error);
+      const saved = window.localStorage.getItem(PROJECTS_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : ['Proyecto Alpha'];
+    } catch (e) {
+      console.error("Error al cargar proyectos desde localStorage", e);
+      return ['Proyecto Alpha'];
     }
-    return initialHistories;
   });
 
-  // Guardar en localStorage cada vez que el historial cambie
+  const [activeProject, setActiveProject] = useState<string>(projects[0] || 'Proyecto Alpha');
+
+  const [chatHistories, setChatHistories] = useState<ChatHistories>(() => {
+    let loadedHistories: ChatHistories = {};
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = window.localStorage.getItem(CHAT_HISTORY_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          Object.keys(parsed).forEach(project => {
+            parsed[project] = parsed[project].map((msg: any) => ({
+              ...msg,
+              timestamp: new Date(msg.timestamp),
+            }));
+          });
+          loadedHistories = parsed;
+        }
+      } catch (e) {
+        console.error("Error al cargar el historial del chat desde localStorage", e);
+      }
+    }
+    projects.forEach(project => {
+      if (!loadedHistories[project]) {
+        loadedHistories[project] = [initialMessage];
+      }
+    });
+    return loadedHistories;
+  });
+
   useEffect(() => {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(chatHistories));
-    } catch (error) {
-      console.error("Error al guardar el historial del chat en localStorage", error);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projects));
+    }
+  }, [projects]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(CHAT_HISTORY_STORAGE_KEY, JSON.stringify(chatHistories));
     }
   }, [chatHistories]);
 
@@ -102,6 +120,21 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         maxLength: selectedGpt.maxLength,
         tone: selectedGpt.tone,
       });
+    }
+  };
+
+  const addProject = (projectName: string) => {
+    if (projectName && !projects.includes(projectName)) {
+      const newProjects = [...projects, projectName];
+      setProjects(newProjects);
+      setChatHistories(prev => ({
+        ...prev,
+        [projectName]: [initialMessage]
+      }));
+      setActiveProject(projectName);
+      toast.success(`Proyecto "${projectName}" creado.`);
+    } else {
+      toast.error("El nombre del proyecto ya existe o es inválido.");
     }
   };
 
@@ -131,6 +164,8 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       setActiveProvider,
       activeProject,
       setActiveProject,
+      projects,
+      addProject,
       currentPreset,
       setCurrentPreset,
       activeGpt,
