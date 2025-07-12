@@ -1,10 +1,6 @@
 import { DeepSeek } from 'deepseek';
 import { NextResponse } from 'next/server';
 
-const deepseek = new DeepSeek({
-  apiKey: process.env.DEEPSEEK_API_KEY,
-});
-
 export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
@@ -12,6 +8,17 @@ export async function POST(req: Request) {
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json({ error: 'Invalid messages format' }, { status: 400 });
     }
+
+    const deepseekApiKey = process.env.DEEPSEEK_API_KEY;
+
+    if (!deepseekApiKey) {
+      console.error('DEEPSEEK_API_KEY is not set in environment variables.');
+      return NextResponse.json({ error: 'Server configuration error: DeepSeek API key missing.' }, { status: 500 });
+    }
+
+    const deepseek = new DeepSeek({
+      apiKey: deepseekApiKey,
+    });
 
     // Convertir el formato de mensajes para la API de DeepSeek
     const deepseekMessages = messages.map((msg: { role: string; content: string }) => ({
@@ -29,8 +36,9 @@ export async function POST(req: Request) {
     const assistantMessage = chatCompletion.choices[0].message.content;
 
     return NextResponse.json({ message: assistantMessage });
-  } catch (error) {
-    console.error('Error calling DeepSeek API:', error);
-    return NextResponse.json({ error: 'Failed to get response from AI' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Error calling DeepSeek API or processing request:', error);
+    // Si el error tiene un mensaje, lo incluimos para depuración
+    return NextResponse.json({ error: `Failed to get response from AI: ${error.message || 'Unknown error'}` }, { status: 500 });
   }
 }
