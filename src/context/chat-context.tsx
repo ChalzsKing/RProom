@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useState, useContext, ReactNode, useEffect, useRef } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 
 interface Preset {
   temperature: number;
@@ -21,6 +21,9 @@ interface Message {
   timestamp: Date;
 }
 
+// Nuevo tipo para almacenar los historiales de chat
+type ChatHistories = Record<string, Message[]>;
+
 interface ChatContextType {
   activeProvider: string;
   setActiveProvider: (provider: string) => void;
@@ -31,12 +34,14 @@ interface ChatContextType {
   activeGpt: CustomGpt;
   setActiveGpt: (gptId: string) => void;
   customGpts: CustomGpt[];
-  messages: Message[];
+  messages: Message[]; // Esto seguirá exponiendo los mensajes del proyecto activo
   addMessage: (role: 'user' | 'assistant', content: string) => void;
   clearMessages: () => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
+
+const initialMessage: Message = { id: '1', role: 'assistant', content: '¡Hola! ¿En qué puedo ayudarte hoy?', timestamp: new Date() };
 
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [activeProvider, setActiveProvider] = useState<string>('DeepSeek');
@@ -71,19 +76,12 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
   const [activeGpt, setActiveGptState] = useState<CustomGpt>(customGpts[0]);
   const [currentPreset, setCurrentPreset] = useState<Preset>(customGpts[0]);
-  const [messages, setMessages] = useState<Message[]>([]); // Inicializar como array vacío
-
-  const hasInitializedMessages = useRef(false);
-
-  useEffect(() => {
-    if (!hasInitializedMessages.current) {
-      const initialMessages: Message[] = [
-        { id: '1', role: 'assistant', content: '¡Hola! ¿En qué puedo ayudarte hoy?', timestamp: new Date() },
-      ];
-      setMessages(initialMessages);
-      hasInitializedMessages.current = true;
-    }
-  }, []); // Se ejecuta solo una vez al montar el componente en el cliente
+  
+  // Estado para almacenar todos los historiales de chat
+  const [chatHistories, setChatHistories] = useState<ChatHistories>({
+    'Proyecto Alpha': [initialMessage],
+    'Cliente Beta': [initialMessage],
+  });
 
   const setActiveGpt = (gptId: string) => {
     const selectedGpt = customGpts.find(gpt => gpt.id === gptId);
@@ -104,13 +102,17 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       content,
       timestamp: new Date(),
     };
-    setMessages((prevMessages) => [...prevMessages, newMessage]);
+    setChatHistories(prevHistories => ({
+      ...prevHistories,
+      [activeProject]: [...(prevHistories[activeProject] || []), newMessage],
+    }));
   };
 
   const clearMessages = () => {
-    setMessages([
-      { id: '1', role: 'assistant', content: '¡Hola! ¿En qué puedo ayudarte hoy?', timestamp: new Date() },
-    ]);
+    setChatHistories(prevHistories => ({
+      ...prevHistories,
+      [activeProject]: [initialMessage],
+    }));
   };
 
   return (
@@ -124,7 +126,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       activeGpt,
       setActiveGpt,
       customGpts,
-      messages,
+      messages: chatHistories[activeProject] || [], // Proporcionar solo los mensajes del proyecto activo
       addMessage,
       clearMessages,
     }}>
