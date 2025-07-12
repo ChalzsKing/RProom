@@ -10,7 +10,7 @@ import { CustomGptSelector } from './custom-gpt-selector';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner'; // Importar toast para notificaciones
+import { toast } from 'sonner';
 
 export function ChatWindow() {
   const { activeProvider, activeProject, activeGpt, currentPreset, messages, addMessage, clearMessages } = useChat();
@@ -40,10 +40,9 @@ export function ChatWindow() {
           },
           body: JSON.stringify({
             messages: [...messages, { role: 'user', content: userMessageContent }],
-            // Aquí podrías pasar currentPreset para hacer los parámetros dinámicos
-            // temperature: currentPreset.temperature,
-            // maxLength: currentPreset.maxLength,
-            // tone: currentPreset.tone,
+            temperature: currentPreset.temperature,
+            maxLength: currentPreset.maxLength,
+            tone: currentPreset.tone,
           }),
         });
 
