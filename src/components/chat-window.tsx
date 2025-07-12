@@ -14,6 +14,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ManageScene } from './manage-scene';
+import { getCharacterColor } from '@/lib/color-utils';
 
 export function ChatWindow() {
   const {
@@ -55,6 +56,9 @@ export function ChatWindow() {
       if (pc) {
         authorName = pc.name;
       }
+    } else {
+      // Si el usuario habla como DM, su ID es el del narrador activo
+      authorId = activeNarrator.id;
     }
 
     addMessage({
@@ -153,29 +157,46 @@ export function ChatWindow() {
         </div>
       </header>
       <main ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 font-mono text-sm space-y-4">
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={cn(
-              "flex flex-col p-3 rounded-lg max-w-[80%] sm:max-w-[70%]",
-              msg.role === 'user'
-                ? 'bg-primary text-primary-foreground self-end rounded-br-none'
-                : 'bg-secondary text-secondary-foreground self-start rounded-bl-none'
-            )}
-          >
-            <div className="font-bold mb-1">
-              {msg.authorName}:
+        {messages.map((msg) => {
+          const isUserMessage = msg.role === 'user';
+          const isNarratorMessage = msg.authorId.startsWith('narrator-') || msg.authorId.startsWith('dungeon-master') || msg.authorId.startsWith('sci-fi-ai') || msg.authorId.startsWith('cthulhu-keeper');
+
+          let bubbleStyle = { bg: 'bg-secondary', text: 'text-secondary-foreground' }; // Default for AI Narrator
+
+          if (isUserMessage) {
+            if (isNarratorMessage) {
+              bubbleStyle = { bg: 'bg-primary', text: 'text-primary-foreground' }; // User speaking as Narrator
+            } else {
+              bubbleStyle = getCharacterColor(msg.authorId); // User speaking as PC
+            }
+          }
+
+          return (
+            <div
+              key={msg.id}
+              className={cn(
+                "flex flex-col p-3 rounded-lg max-w-[80%] sm:max-w-[70%]",
+                bubbleStyle.bg,
+                bubbleStyle.text,
+                isUserMessage
+                  ? 'self-end rounded-br-none'
+                  : 'self-start rounded-bl-none'
+              )}
+            >
+              <div className="font-bold mb-1">
+                {msg.authorName}:
+              </div>
+              <div className="markdown-content">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {msg.content}
+                </ReactMarkdown>
+              </div>
+              <div className="text-xs opacity-70 mt-2 text-right">
+                {format(msg.timestamp, 'HH:mm:ss', { locale: es })}
+              </div>
             </div>
-            <div className="markdown-content">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {msg.content}
-              </ReactMarkdown>
-            </div>
-            <div className="text-xs opacity-70 mt-2 text-right">
-              {format(msg.timestamp, 'HH:mm:ss', { locale: es })}
-            </div>
-          </div>
-        ))}
+          );
+        })}
         {isThinking && (
           <div className="flex flex-col p-3 rounded-lg max-w-[80%] sm:max-w-[70%] bg-secondary text-secondary-foreground self-start rounded-bl-none animate-pulse">
             <div className="font-bold mb-1">{activeNarrator.name}:</div>
