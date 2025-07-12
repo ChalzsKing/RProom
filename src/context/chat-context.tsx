@@ -14,6 +14,13 @@ interface CustomGpt extends Preset {
   description: string;
 }
 
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
 interface ChatContextType {
   activeProvider: string;
   setActiveProvider: (provider: string) => void;
@@ -24,6 +31,8 @@ interface ChatContextType {
   activeGpt: CustomGpt;
   setActiveGpt: (gptId: string) => void;
   customGpts: CustomGpt[];
+  messages: Message[];
+  addMessage: (role: 'user' | 'assistant', content: string) => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -61,6 +70,10 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
   const [activeGpt, setActiveGptState] = useState<CustomGpt>(customGpts[0]);
   const [currentPreset, setCurrentPreset] = useState<Preset>(customGpts[0]);
+  const [messages, setMessages] = useState<Message[]>([
+    { id: '1', role: 'assistant', content: '¡Hola! ¿En qué puedo ayudarte hoy?', timestamp: new Date() },
+    { id: '2', role: 'user', content: 'Necesito una interfaz de chat estilo Matrix.', timestamp: new Date() },
+  ]);
 
   const setActiveGpt = (gptId: string) => {
     const selectedGpt = customGpts.find(gpt => gpt.id === gptId);
@@ -74,6 +87,16 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const addMessage = (role: 'user' | 'assistant', content: string) => {
+    const newMessage: Message = {
+      id: Date.now().toString(), // Simple ID para demostración
+      role,
+      content,
+      timestamp: new Date(),
+    };
+    setMessages((prevMessages) => [...prevMessages, newMessage]);
+  };
+
   return (
     <ChatContext.Provider value={{
       activeProvider,
@@ -85,6 +108,8 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       activeGpt,
       setActiveGpt,
       customGpts,
+      messages,
+      addMessage,
     }}>
       {children}
     </ChatContext.Provider>
