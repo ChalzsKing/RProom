@@ -63,15 +63,15 @@ export function SidebarNav() {
 
   return (
     <>
-      <div className="flex h-full max-h-screen flex-col gap-2 bg-sidebar p-4 text-sidebar-foreground border-r border-sidebar-border">
-        <div className="flex h-14 items-center border-b border-sidebar-border px-4 lg:h-[60px] lg:px-6">
-          <h1 className="text-xl font-semibold text-sidebar-primary-foreground">Matrix AI</h1>
+      <div className="flex h-full max-h-screen flex-col gap-2 bg-background p-4 text-foreground border-r border-border">
+        <div className="flex h-14 items-center border-b border-border px-4 lg:h-[60px] lg:px-6">
+          <h1 className="text-xl font-semibold text-foreground">Matrix AI</h1>
         </div>
         <div className="flex-1 overflow-auto py-2">
           <nav className="grid items-start gap-2 text-sm font-medium">
             <div className="flex items-center justify-between px-3 py-2">
               <span className="text-xs font-semibold text-muted-foreground">Carpetas</span>
-              <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-sidebar-primary" onClick={() => openDialog('folder')}>
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary" onClick={() => openDialog('folder')}>
                 <PlusCircle className="h-4 w-4" />
                 <span className="sr-only">Nueva Carpeta</span>
               </Button>
@@ -80,7 +80,7 @@ export function SidebarNav() {
             <Accordion type="multiple" className="w-full" value={openFolders} onValueChange={setOpenFolders}>
               {(folders || []).map((folder) => (
                 <AccordionItem key={folder.id} value={folder.id} className="border-b-0">
-                  <div className="flex items-center w-full rounded-md hover:bg-sidebar-accent/50 group">
+                  <div className="flex items-center w-full rounded-md hover:bg-accent/50 group">
                     <AccordionTrigger className="flex-1 px-3 py-2 text-left hover:no-underline">
                       <div className="flex items-center gap-3">
                         <Folder className="h-4 w-4" />
@@ -90,7 +90,7 @@ export function SidebarNav() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6 mr-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="h-6 w-6 mr-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -105,7 +105,7 @@ export function SidebarNav() {
                     <Accordion type="multiple" className="w-full" value={openProjects} onValueChange={setOpenProjects}>
                       {(folder.projects || []).map((project) => (
                         <AccordionItem key={project.id} value={project.id} className="border-b-0">
-                          <div className="flex items-center w-full rounded-md hover:bg-sidebar-accent/50 group">
+                          <div className="flex items-center w-full rounded-md hover:bg-accent/50 group">
                             <AccordionTrigger className="flex-1 px-3 py-2 text-left hover:no-underline">
                               <div className="flex items-center gap-3">
                                 <Briefcase className="h-4 w-4" />
@@ -115,7 +115,7 @@ export function SidebarNav() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 mr-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="h-6 w-6 mr-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent"
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
@@ -129,8 +129,8 @@ export function SidebarNav() {
                           <AccordionContent className="pl-4 pt-1">
                             {(project.chats || []).map((chat) => (
                               <a key={chat.id} href="#" onClick={(e) => { e.preventDefault(); setActiveChatId(chat.id); }}
-                                className={cn("flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-sidebar-primary",
-                                  activeChatId === chat.id ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground")}>
+                                className={cn("flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary",
+                                  activeChatId === chat.id ? "bg-accent text-accent-foreground" : "text-foreground")}>
                                 <MessageSquare className="h-4 w-4" />{chat.name}
                               </a>
                             ))}
@@ -146,8 +146,8 @@ export function SidebarNav() {
             <div className="mt-4 px-3 py-2 text-xs font-semibold text-muted-foreground">Proveedores de IA</div>
             {providers.map((provider) => (
               <a key={provider} href="#" onClick={(e) => { e.preventDefault(); setActiveProvider(provider); }}
-                className={cn("flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-sidebar-primary",
-                  activeProvider === provider ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground")}>
+                className={cn("flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary",
+                  activeProvider === provider ? "bg-accent text-accent-foreground" : "text-foreground")}>
                 <Brain className="h-4 w-4" />{provider}
               </a>
             ))}
@@ -156,9 +156,9 @@ export function SidebarNav() {
       </div>
 
       <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <AlertDialogContent className="bg-sidebar border-sidebar-border">
+        <AlertDialogContent className="bg-background border-border">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-sidebar-primary-foreground">{getDialogTitle()}</AlertDialogTitle>
+            <AlertDialogTitle className="text-foreground">{getDialogTitle()}</AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground">Ingresa un nombre.</AlertDialogDescription>
           </AlertDialogHeader>
           <Input placeholder="Nombre..." value={newName} onChange={(e) => setNewName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleCreate(); }}
