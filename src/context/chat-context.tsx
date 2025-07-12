@@ -33,6 +33,7 @@ interface ChatContextType {
   customGpts: CustomGpt[];
   messages: Message[];
   addMessage: (role: 'user' | 'assistant', content: string) => void;
+  clearMessages: () => void; // Nueva función para limpiar mensajes
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -68,12 +69,13 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     },
   ];
 
+  const initialMessages: Message[] = [
+    { id: '1', role: 'assistant', content: '¡Hola! ¿En qué puedo ayudarte hoy?', timestamp: new Date() },
+  ];
+
   const [activeGpt, setActiveGptState] = useState<CustomGpt>(customGpts[0]);
   const [currentPreset, setCurrentPreset] = useState<Preset>(customGpts[0]);
-  const [messages, setMessages] = useState<Message[]>([
-    { id: '1', role: 'assistant', content: '¡Hola! ¿En qué puedo ayudarte hoy?', timestamp: new Date() },
-    { id: '2', role: 'user', content: 'Necesito una interfaz de chat estilo Matrix.', timestamp: new Date() },
-  ]);
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
 
   const setActiveGpt = (gptId: string) => {
     const selectedGpt = customGpts.find(gpt => gpt.id === gptId);
@@ -97,6 +99,10 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     setMessages((prevMessages) => [...prevMessages, newMessage]);
   };
 
+  const clearMessages = () => {
+    setMessages(initialMessages);
+  };
+
   return (
     <ChatContext.Provider value={{
       activeProvider,
@@ -110,6 +116,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       customGpts,
       messages,
       addMessage,
+      clearMessages, // Añadir la nueva función al contexto
     }}>
       {children}
     </ChatContext.Provider>
