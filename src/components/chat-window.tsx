@@ -5,9 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Send } from 'lucide-react';
 import { useChat } from '@/context/chat-context';
+import { PresetSettings } from './preset-settings'; // Importar el nuevo componente
 
 export function ChatWindow() {
-  const { activeProvider, activeProject } = useChat();
+  const { activeProvider, activeProject, currentPreset } = useChat();
 
   return (
     <div className="flex flex-col h-full bg-background text-foreground">
@@ -15,7 +16,12 @@ export function ChatWindow() {
         <h2 className="text-lg font-semibold">
           Chat con {activeProvider} - {activeProject}
         </h2>
-        {/* Aquí se podrían añadir botones para presets, exportar, etc. */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">
+            Temp: {currentPreset.temperature} | Len: {currentPreset.maxLength} | Tono: {currentPreset.tone}
+          </span>
+          <PresetSettings /> {/* Añadir el botón de configuración */}
+        </div>
       </header>
       <div className="flex-1 overflow-y-auto p-4 font-mono text-sm">
         {/* Área de visualización de mensajes */}
