@@ -39,6 +39,7 @@ export function ChatWindow() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
+            provider: activeProvider, // Enviar el proveedor activo
             messages: [...messages, { role: 'user', content: userMessageContent }],
             temperature: currentPreset.temperature,
             maxLength: currentPreset.maxLength,
