@@ -21,7 +21,6 @@ export function SidebarNav() {
     campaigns, addCampaign, addSession,
     activeSessionId, setActiveSessionId, getActiveAdventure,
     narrators, activeNarrator, setActiveNarrator,
-    playerCharacters
   } = useChat();
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -32,12 +31,17 @@ export function SidebarNav() {
   
   const [openCampaigns, setOpenCampaigns] = useState<string[]>([]);
   const [openAdventures, setOpenAdventures] = useState<string[]>([]);
+  const [openCharacters, setOpenCharacters] = useState<string[]>([]);
 
   const providers = ['DeepSeek', 'Gemini'];
 
   useEffect(() => {
     if (campaigns) {
-      setOpenCampaigns(campaigns.map(c => c.id));
+      const activeCampaign = campaigns.find(c => c.adventures.some(a => a.sessions.some(s => s.id === activeSessionId)));
+      if (activeCampaign) {
+        setOpenCampaigns(prev => [...new Set([...prev, activeCampaign.id])]);
+        setOpenCharacters(prev => [...new Set([...prev, activeCampaign.id])]);
+      }
       const activeAdventure = getActiveAdventure();
       if (activeAdventure) {
         setOpenAdventures(prev => [...new Set([...prev, activeAdventure.id])]);
@@ -108,7 +112,7 @@ export function SidebarNav() {
                       </Button>
                     </ManageAdventure>
                   </div>
-                  <AccordionContent className="pl-4 pt-1">
+                  <AccordionContent className="pl-4 pt-1 space-y-1">
                     <Accordion type="multiple" className="w-full" value={openAdventures} onValueChange={setOpenAdventures}>
                       {(campaign.adventures || []).map((adventure) => (
                         <AccordionItem key={adventure.id} value={adventure.id} className="border-b-0">
@@ -119,7 +123,7 @@ export function SidebarNav() {
                                 <span>{adventure.name}</span>
                               </div>
                             </AccordionTrigger>
-                            <ManageAdventure adventure={adventure}>
+                            <ManageAdventure adventure={adventure} campaignId={campaign.id}>
                                <Button variant="ghost" size="icon" className="h-8 w-8 mr-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Pencil className="h-4 w-4" />
                                 <span className="sr-only">Editar Aventura</span>
@@ -147,34 +151,46 @@ export function SidebarNav() {
                         </AccordionItem>
                       ))}
                     </Accordion>
+                    
+                    <Accordion type="multiple" className="w-full" value={openCharacters} onValueChange={setOpenCharacters}>
+                      <AccordionItem value={campaign.id} className="border-b-0">
+                        <div className="flex items-center w-full rounded-md hover:bg-accent/50 group">
+                          <AccordionTrigger className="flex-1 px-3 py-2 text-left hover:no-underline">
+                            <div className="flex items-center gap-3">
+                              <Users className="h-4 w-4" />
+                              <span>Personajes</span>
+                            </div>
+                          </AccordionTrigger>
+                          <ManagePcs campaignId={campaign.id}>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 mr-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent">
+                              <Plus className="h-4 w-4" />
+                              <span className="sr-only">Nuevo Personaje</span>
+                            </Button>
+                          </ManagePcs>
+                        </div>
+                        <AccordionContent className="pl-4 pt-1">
+                          {(campaign.playerCharacters || []).map((pc) => (
+                            <div key={pc.id} className="flex items-center justify-between rounded-lg hover:bg-accent/50 group">
+                              <div className="flex-1 flex items-center gap-3 rounded-lg px-3 py-2 text-foreground">
+                                <User className="h-4 w-4" />
+                                <span className="truncate flex-1">{pc.name}</span>
+                              </div>
+                              <ManagePcs pc={pc} campaignId={campaign.id}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 mr-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Pencil className="h-4 w-4" />
+                                  <span className="sr-only">Editar Personaje</span>
+                                </Button>
+                              </ManagePcs>
+                            </div>
+                          ))}
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+
                   </AccordionContent>
                 </AccordionItem>
               ))}
             </Accordion>
-
-            <div className="mt-4 flex items-center justify-between px-3 py-2">
-              <span className="text-xs font-semibold text-muted-foreground">Personajes (PJs)</span>
-              <ManagePcs>
-                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary">
-                  <PlusCircle className="h-4 w-4" />
-                  <span className="sr-only">Crear Personaje</span>
-                </Button>
-              </ManagePcs>
-            </div>
-            {playerCharacters.map((pc) => (
-              <div key={pc.id} className="flex items-center justify-between rounded-lg hover:bg-accent/50 group">
-                <div className="flex-1 flex items-center gap-3 rounded-lg px-3 py-2 text-foreground">
-                  <User className="h-4 w-4" />
-                  <span className="truncate flex-1">{pc.name}</span>
-                </div>
-                <ManagePcs pc={pc}>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 mr-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Pencil className="h-4 w-4" />
-                    <span className="sr-only">Editar Personaje</span>
-                  </Button>
-                </ManagePcs>
-              </div>
-            ))}
 
             <div className="mt-4 flex items-center justify-between px-3 py-2">
               <span className="text-xs font-semibold text-muted-foreground">Narradores (IA)</span>

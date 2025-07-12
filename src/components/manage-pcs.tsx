@@ -40,10 +40,11 @@ type PcFormValues = z.infer<typeof pcSchema>;
 
 interface ManagePcsProps {
   pc?: PlayerCharacter;
+  campaignId: string;
   children: React.ReactNode;
 }
 
-export function ManagePcs({ pc, children }: ManagePcsProps) {
+export function ManagePcs({ pc, campaignId, children }: ManagePcsProps) {
   const { addPlayerCharacter, updatePlayerCharacter } = useChat();
   const [open, setOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
@@ -96,9 +97,9 @@ export function ManagePcs({ pc, children }: ManagePcsProps) {
 
   function onSubmit(values: PcFormValues) {
     if (isEditMode && pc) {
-      updatePlayerCharacter(pc.id, values);
+      updatePlayerCharacter(campaignId, pc.id, values);
     } else {
-      addPlayerCharacter(values);
+      addPlayerCharacter(campaignId, values);
     }
     setOpen(false);
   }

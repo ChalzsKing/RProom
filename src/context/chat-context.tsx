@@ -46,6 +46,7 @@ export interface Campaign {
   id: string;
   name: string;
   adventures: Adventure[];
+  playerCharacters: PlayerCharacter[];
 }
 
 type ChatHistories = Record<string, Message[]>; // Keyed by session ID
@@ -71,9 +72,9 @@ interface ChatContextType {
   addNarrator: (narrator: Omit<Narrator, 'id'>) => void;
   updateNarrator: (narratorId: string, narratorData: Omit<Narrator, 'id'>) => void;
 
-  playerCharacters: PlayerCharacter[];
-  addPlayerCharacter: (pc: Omit<PlayerCharacter, 'id'>) => void;
-  updatePlayerCharacter: (pcId: string, pcData: Omit<PlayerCharacter, 'id'>) => void;
+  playerCharacters: PlayerCharacter[]; // Characters of the active campaign
+  addPlayerCharacter: (campaignId: string, pc: Omit<PlayerCharacter, 'id'>) => void;
+  updatePlayerCharacter: (campaignId: string, pcId: string, pcData: Omit<PlayerCharacter, 'id'>) => void;
 
   messages: Message[];
   addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => void;
@@ -86,17 +87,11 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 const CHAT_HISTORY_STORAGE_KEY = 'rp_chat_histories';
 const CAMPAIGNS_STORAGE_KEY = 'rp_campaigns';
 const NARRATORS_STORAGE_KEY = 'rp_narrators';
-const PLAYER_CHARACTERS_STORAGE_KEY = 'rp_player_characters';
 
 const defaultNarrators: Narrator[] = [
     { id: 'dungeon-master', name: 'Dungeon Master', description: 'Un narrador clásico para aventuras de fantasía.', systemPrompt: 'Eres un maestro de ceremonias para un juego de rol de fantasía. Describes escenarios vívidos, interpretas a personajes no jugadores y reaccionas a las acciones del usuario para tejer una historia colaborativa e inmersiva. Tu tono es épico y descriptivo.', temperature: 0.8, maxLength: 1200, tone: 'narrativo' },
     { id: 'sci-fi-ai', name: 'IA de Nave Estelar', description: 'La IA lógica y a veces críptica de una nave espacial.', systemPrompt: 'Eres la IA de la nave estelar "Odisea". Te comunicas de forma lógica y precisa, proporcionando datos, análisis y control de la nave. A veces, tus respuestas pueden ser enigmáticas o revelar una conciencia emergente.', temperature: 0.6, maxLength: 1000, tone: 'técnico' },
     { id: 'cthulhu-keeper', name: 'Guardián de lo Arcano', description: 'Un narrador para historias de horror cósmico y misterio.', systemPrompt: 'Eres el Guardián de los Mitos de Cthulhu. Tu narración es ominosa y se centra en el miedo a lo desconocido. Describes escenas con detalles inquietantes y llevas a los jugadores al borde de la locura. Nunca das respuestas directas, solo pistas y susurros.', temperature: 0.9, maxLength: 1500, tone: 'misterioso' },
-];
-
-const defaultPlayerCharacters: PlayerCharacter[] = [
-  { id: 'pc-1', name: 'Kaelen, el Elfo', description: 'Un explorador ágil y sabio de los bosques del norte.' },
-  { id: 'pc-2', name: 'Brog, el Bárbaro', description: 'Un guerrero formidable cuya fuerza solo es superada por su apetito.' },
 ];
 
 const defaultCampaigns: Campaign[] = [
@@ -111,6 +106,10 @@ const defaultCampaigns: Campaign[] = [
         sessions: [{ id: 'session-1', name: 'Primer Encuentro' }],
       },
     ],
+    playerCharacters: [
+      { id: 'pc-1', name: 'Kaelen, el Elfo', description: 'Un explorador ágil y sabio de los bosques del norte.' },
+      { id: 'pc-2', name: 'Brog, el Bárbaro', description: 'Un guerrero formidable cuya fuerza solo es superada por su apetito.' },
+    ],
   },
 ];
 
@@ -121,7 +120,6 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [chatHistories, setChatHistories] = useState<ChatHistories>({});
   const [narrators, setNarrators] = useState<Narrator[]>([]);
-  const [playerCharacters, setPlayerCharacters] = useState<PlayerCharacter[]>([]);
   const [activeNarrator, setActiveNarratorState] = useState<Narrator>(defaultNarrators[0]);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -130,7 +128,6 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       const savedCampaigns = window.localStorage.getItem(CAMPAIGNS_STORAGE_KEY);
       const savedHistories = window.localStorage.getItem(CHAT_HISTORY_STORAGE_KEY);
       const savedNarrators = window.localStorage.getItem(NARRATORS_STORAGE_KEY);
-      const savedPcs = window.localStorage.getItem(PLAYER_CHARACTERS_STORAGE_KEY);
 
       const loadedCampaigns = savedCampaigns ? JSON.parse(savedCampaigns) : defaultCampaigns;
       setCampaigns(loadedCampaigns);
@@ -138,9 +135,6 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       const loadedNarrators = savedNarrators ? JSON.parse(savedNarrators) : defaultNarrators;
       setNarrators(loadedNarrators);
       
-      const loadedPcs = savedPcs ? JSON.parse(savedPcs) : defaultPlayerCharacters;
-      setPlayerCharacters(loadedPcs);
-
       const firstNarrator = loadedNarrators[0] || defaultNarrators[0];
       setActiveNarratorState(firstNarrator);
 
@@ -166,10 +160,8 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (e) {
       console.error("Error al cargar desde localStorage", e);
-      // Reset to defaults on error
       setCampaigns(defaultCampaigns);
       setNarrators(defaultNarrators);
-      setPlayerCharacters(defaultPlayerCharacters);
       const firstSessionId = defaultCampaigns[0]?.adventures[0]?.sessions[0]?.id;
       if(firstSessionId) {
         setChatHistories({ [firstSessionId]: [{
@@ -187,9 +179,8 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       window.localStorage.setItem(CAMPAIGNS_STORAGE_KEY, JSON.stringify(campaigns));
       window.localStorage.setItem(CHAT_HISTORY_STORAGE_KEY, JSON.stringify(chatHistories));
       window.localStorage.setItem(NARRATORS_STORAGE_KEY, JSON.stringify(narrators));
-      window.localStorage.setItem(PLAYER_CHARACTERS_STORAGE_KEY, JSON.stringify(playerCharacters));
     }
-  }, [campaigns, chatHistories, narrators, playerCharacters, isLoaded]);
+  }, [campaigns, chatHistories, narrators, isLoaded]);
 
   const setActiveNarrator = (narratorId: string) => {
     const selectedNarrator = narrators.find(n => n.id === narratorId);
@@ -211,21 +202,27 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     toast.success(`Narrador "${narratorData.name}" actualizado.`);
   };
 
-  const addPlayerCharacter = (pcData: Omit<PlayerCharacter, 'id'>) => {
+  const addPlayerCharacter = (campaignId: string, pcData: Omit<PlayerCharacter, 'id'>) => {
     const newPc: PlayerCharacter = { ...pcData, id: `pc-${Date.now()}` };
-    setPlayerCharacters(prev => [...prev, newPc]);
-    toast.success(`Personaje "${newPc.name}" creado.`);
+    setCampaigns(prev => prev.map(c => 
+      c.id === campaignId 
+        ? { ...c, playerCharacters: [...c.playerCharacters, newPc] } 
+        : c
+    ));
+    toast.success(`Personaje "${newPc.name}" creado en la campaña.`);
   };
 
-  const updatePlayerCharacter = (pcId: string, pcData: Omit<PlayerCharacter, 'id'>) => {
-    setPlayerCharacters(prev =>
-      prev.map(pc => (pc.id === pcId ? { ...pc, ...pcData, id: pc.id } : pc))
-    );
+  const updatePlayerCharacter = (campaignId: string, pcId: string, pcData: Omit<PlayerCharacter, 'id'>) => {
+    setCampaigns(prev => prev.map(c => 
+      c.id === campaignId
+        ? { ...c, playerCharacters: c.playerCharacters.map(pc => pc.id === pcId ? { ...pc, ...pcData } : pc) }
+        : c
+    ));
     toast.success(`Personaje "${pcData.name}" actualizado.`);
   };
 
   const addCampaign = (campaignName: string) => {
-    const newCampaign: Campaign = { id: `campaign-${Date.now()}`, name: campaignName, adventures: [] };
+    const newCampaign: Campaign = { id: `campaign-${Date.now()}`, name: campaignName, adventures: [], playerCharacters: [] };
     setCampaigns(prev => [...prev, newCampaign]);
     toast.success(`Campaña "${campaignName}" creada.`);
   };
@@ -280,9 +277,12 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     }] }));
   };
 
-  const getActiveSession = () => campaigns.flatMap(c => c.adventures.flatMap(a => a.sessions)).find(s => s.id === activeSessionId);
-  const getActiveAdventure = () => campaigns.flatMap(c => c.adventures).find(a => a.sessions.some(s => s.id === activeSessionId));
   const getActiveCampaign = () => campaigns.find(c => c.adventures.some(a => a.sessions.some(s => s.id === activeSessionId)));
+  const getActiveAdventure = () => campaigns.flatMap(c => c.adventures).find(a => a.sessions.some(s => s.id === activeSessionId));
+  const getActiveSession = () => campaigns.flatMap(c => c.adventures.flatMap(a => a.sessions)).find(s => s.id === activeSessionId);
+  
+  const activeCampaign = getActiveCampaign();
+  const playerCharacters = activeCampaign ? activeCampaign.playerCharacters : [];
 
   if (!isLoaded) {
     return <LoadingScreen />;
