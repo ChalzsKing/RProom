@@ -21,7 +21,6 @@ interface Message {
   timestamp: Date;
 }
 
-// Nuevo tipo para almacenar los historiales de chat
 type ChatHistories = Record<string, Message[]>;
 
 interface ChatContextType {
@@ -34,7 +33,7 @@ interface ChatContextType {
   activeGpt: CustomGpt;
   setActiveGpt: (gptId: string) => void;
   customGpts: CustomGpt[];
-  messages: Message[]; // Esto seguirá exponiendo los mensajes del proyecto activo
+  messages: Message[];
   addMessage: (role: 'user' | 'assistant', content: string) => void;
   clearMessages: () => void;
 }
@@ -42,46 +41,57 @@ interface ChatContextType {
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 const initialMessage: Message = { id: '1', role: 'assistant', content: '¡Hola! ¿En qué puedo ayudarte hoy?', timestamp: new Date() };
+const initialHistories: ChatHistories = {
+  'Proyecto Alpha': [initialMessage],
+  'Cliente Beta': [initialMessage],
+};
+const STORAGE_KEY = 'matrix_ai_chat_histories';
 
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [activeProvider, setActiveProvider] = useState<string>('DeepSeek');
   const [activeProject, setActiveProject] = useState<string>('Proyecto Alpha');
+  
+  const [chatHistories, setChatHistories] = useState<ChatHistories>(() => {
+    // Cargar desde localStorage al inicio
+    if (typeof window === 'undefined') {
+      return initialHistories;
+    }
+    try {
+      const savedHistories = window.localStorage.getItem(STORAGE_KEY);
+      if (savedHistories) {
+        const parsed = JSON.parse(savedHistories);
+        // Convertir timestamps de string a Date
+        Object.keys(parsed).forEach(project => {
+          parsed[project] = parsed[project].map((msg: any) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp),
+          }));
+        });
+        return parsed;
+      }
+    } catch (error) {
+      console.error("Error al cargar el historial del chat desde localStorage", error);
+    }
+    return initialHistories;
+  });
+
+  // Guardar en localStorage cada vez que el historial cambie
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(chatHistories));
+    } catch (error) {
+      console.error("Error al guardar el historial del chat en localStorage", error);
+    }
+  }, [chatHistories]);
 
   const customGpts: CustomGpt[] = [
-    {
-      id: 'general-assistant',
-      name: 'Asistente General',
-      description: 'Un asistente versátil para tareas cotidianas.',
-      temperature: 0.7,
-      maxLength: 500,
-      tone: 'neutral',
-    },
-    {
-      id: 'code-helper',
-      name: 'Asistente de Código',
-      description: 'Optimizado para generar y depurar código.',
-      temperature: 0.5,
-      maxLength: 1000,
-      tone: 'technical',
-    },
-    {
-      id: 'creative-writer',
-      name: 'Redactor Creativo',
-      description: 'Ideal para brainstorming y escritura creativa.',
-      temperature: 0.9,
-      maxLength: 750,
-      tone: 'imaginative',
-    },
+    { id: 'general-assistant', name: 'Asistente General', description: 'Un asistente versátil para tareas cotidianas.', temperature: 0.7, maxLength: 500, tone: 'neutral' },
+    { id: 'code-helper', name: 'Asistente de Código', description: 'Optimizado para generar y depurar código.', temperature: 0.5, maxLength: 1000, tone: 'technical' },
+    { id: 'creative-writer', name: 'Redactor Creativo', description: 'Ideal para brainstorming y escritura creativa.', temperature: 0.9, maxLength: 750, tone: 'imaginative' },
   ];
 
   const [activeGpt, setActiveGptState] = useState<CustomGpt>(customGpts[0]);
   const [currentPreset, setCurrentPreset] = useState<Preset>(customGpts[0]);
-  
-  // Estado para almacenar todos los historiales de chat
-  const [chatHistories, setChatHistories] = useState<ChatHistories>({
-    'Proyecto Alpha': [initialMessage],
-    'Cliente Beta': [initialMessage],
-  });
 
   const setActiveGpt = (gptId: string) => {
     const selectedGpt = customGpts.find(gpt => gpt.id === gptId);
@@ -126,7 +136,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       activeGpt,
       setActiveGpt,
       customGpts,
-      messages: chatHistories[activeProject] || [], // Proporcionar solo los mensajes del proyecto activo
+      messages: chatHistories[activeProject] || [],
       addMessage,
       clearMessages,
     }}>
