@@ -2,6 +2,7 @@
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { toast } from 'sonner';
+import { LoadingScreen } from '@/components/loading-screen';
 
 // --- Tipos de Datos ---
 interface Preset {
@@ -89,11 +90,9 @@ const defaultFolders: Folder[] = [
 // --- Componente Provider ---
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [activeProvider, setActiveProvider] = useState<string>('DeepSeek');
-  const [folders, setFolders] = useState<Folder[]>(defaultFolders);
-  const [activeChatId, setActiveChatId] = useState<string | null>(defaultFolders[0]?.projects[0]?.chats[0]?.id || null);
-  const [chatHistories, setChatHistories] = useState<ChatHistories>({
-    [defaultFolders[0]?.projects[0]?.chats[0]?.id]: [initialMessage]
-  });
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [chatHistories, setChatHistories] = useState<ChatHistories>({});
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -119,13 +118,18 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       }
       setChatHistories(loadedHistories);
 
-      if (firstChatId) {
+      if (activeChatId === null && firstChatId) {
         setActiveChatId(firstChatId);
-      } else {
-        setActiveChatId(null);
       }
     } catch (e) {
       console.error("Error al cargar desde localStorage", e);
+      // Si hay un error, cargar los valores por defecto
+      setFolders(defaultFolders);
+      const firstChatId = defaultFolders[0]?.projects[0]?.chats[0]?.id;
+      if(firstChatId) {
+        setChatHistories({ [firstChatId]: [initialMessage] });
+        setActiveChatId(firstChatId);
+      }
     } finally {
       setIsLoaded(true);
     }
@@ -219,6 +223,10 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const getActiveChat = () => folders.flatMap(f => (f.projects || []).flatMap(p => p.chats || [])).find(c => c.id === activeChatId);
   const getActiveProject = () => folders.flatMap(f => f.projects || []).find(p => (p.chats || []).some(c => c.id === activeChatId));
   const getActiveFolder = () => folders.find(f => (f.projects || []).some(p => (p.chats || []).some(c => c.id === activeChatId)));
+
+  if (!isLoaded) {
+    return <LoadingScreen />;
+  }
 
   return (
     <ChatContext.Provider value={{
