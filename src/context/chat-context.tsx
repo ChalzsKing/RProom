@@ -113,7 +113,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         loadedHistories = parsed;
       }
       
-      const firstChatId = loadedFolders[0]?.projects[0]?.chats[0]?.id;
+      const firstChatId = loadedFolders[0]?.projects?.[0]?.chats?.[0]?.id;
       if (firstChatId && !loadedHistories[firstChatId]) {
           loadedHistories[firstChatId] = [initialMessage];
       }
@@ -171,12 +171,12 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const addProject = (folderId: string, projectName: string) => {
-    const projectExists = folders.flatMap(f => f.projects).some(p => p.name === projectName);
+    const projectExists = folders.flatMap(f => f.projects || []).some(p => p.name === projectName);
     if (projectName && !projectExists) {
       const newProject: Project = { id: `project-${Date.now()}`, name: projectName, chats: [] };
       setFolders(prevFolders =>
         prevFolders.map(folder =>
-          folder.id === folderId ? { ...folder, projects: [...folder.projects, newProject] } : folder
+          folder.id === folderId ? { ...folder, projects: [...(folder.projects || []), newProject] } : folder
         )
       );
       toast.success(`Proyecto "${projectName}" creado.`);
@@ -186,14 +186,14 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const addChat = (projectId: string, chatName: string) => {
-    const chatNameExists = folders.flatMap(f => f.projects.flatMap(p => p.chats)).some(c => c.name === chatName);
+    const chatNameExists = folders.flatMap(f => (f.projects || []).flatMap(p => p.chats || [])).some(c => c.name === chatName);
     if (chatName && !chatNameExists) {
       const newChat: Chat = { id: `chat-${Date.now()}`, name: chatName };
       setFolders(prevFolders =>
         prevFolders.map(folder => ({
           ...folder,
-          projects: folder.projects.map(project =>
-            project.id === projectId ? { ...project, chats: [...project.chats, newChat] } : project
+          projects: (folder.projects || []).map(project =>
+            project.id === projectId ? { ...project, chats: [...(project.chats || []), newChat] } : project
           ),
         }))
       );
@@ -216,9 +216,9 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     setChatHistories(prev => ({ ...prev, [activeChatId]: [initialMessage] }));
   };
 
-  const getActiveChat = () => folders.flatMap(f => f.projects.flatMap(p => p.chats)).find(c => c.id === activeChatId);
-  const getActiveProject = () => folders.flatMap(f => f.projects).find(p => p.chats.some(c => c.id === activeChatId));
-  const getActiveFolder = () => folders.find(f => f.projects.some(p => p.chats.some(c => c.id === activeChatId)));
+  const getActiveChat = () => folders.flatMap(f => (f.projects || []).flatMap(p => p.chats || [])).find(c => c.id === activeChatId);
+  const getActiveProject = () => folders.flatMap(f => f.projects || []).find(p => (p.chats || []).some(c => c.id === activeChatId));
+  const getActiveFolder = () => folders.find(f => (f.projects || []).some(p => (p.chats || []).some(c => c.id === activeChatId)));
 
   return (
     <ChatContext.Provider value={{
