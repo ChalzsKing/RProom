@@ -14,13 +14,14 @@ import { toast } from 'sonner';
 
 export function ChatWindow() {
   const {
-    activeProvider, getActiveChat, getActiveFolder, currentPreset,
+    activeProvider, getActiveChat, getActiveProject, getActiveFolder, currentPreset,
     messages, addMessage, clearMessages
   } = useChat();
   const [inputMessage, setInputMessage] = useState('');
   const [isThinking, setIsThinking] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const activeChat = getActiveChat();
+  const activeProject = getActiveProject();
   const activeFolder = getActiveFolder();
 
   useEffect(() => {
@@ -74,8 +75,8 @@ export function ChatWindow() {
     toast.info('Chat reiniciado.');
   };
 
-  const chatTitle = activeFolder && activeChat
-    ? `${activeFolder.name} / ${activeChat.name}`
+  const chatTitle = activeFolder && activeProject && activeChat
+    ? `${activeFolder.name} / ${activeProject.name} / ${activeChat.name}`
     : 'Chat';
 
   return (

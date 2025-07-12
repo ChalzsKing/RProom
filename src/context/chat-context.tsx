@@ -28,10 +28,16 @@ interface Chat {
   name: string;
 }
 
-interface Folder {
+interface Project {
   id: string;
   name: string;
   chats: Chat[];
+}
+
+interface Folder {
+  id: string;
+  name: string;
+  projects: Project[];
 }
 
 type ChatHistories = Record<string, Message[]>; // Keyed by chat ID
@@ -42,10 +48,12 @@ interface ChatContextType {
   setActiveProvider: (provider: string) => void;
   folders: Folder[];
   addFolder: (folderName: string) => void;
-  addChat: (folderId: string, chatName: string) => void;
+  addProject: (folderId: string, projectName: string) => void;
+  addChat: (projectId: string, chatName: string) => void;
   activeChatId: string | null;
   setActiveChatId: (chatId: string) => void;
   getActiveChat: () => Chat | undefined;
+  getActiveProject: () => Project | undefined;
   getActiveFolder: () => Folder | undefined;
   currentPreset: Preset;
   setCurrentPreset: (preset: Preset) => void;
@@ -68,23 +76,26 @@ const defaultFolders: Folder[] = [
   {
     id: 'folder-1',
     name: 'General',
-    chats: [{ id: 'chat-1', name: 'Conversación Inicial' }],
+    projects: [
+      {
+        id: 'project-1',
+        name: 'Tareas Diarias',
+        chats: [{ id: 'chat-1', name: 'Conversación Inicial' }],
+      },
+    ],
   },
 ];
 
 // --- Componente Provider ---
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [activeProvider, setActiveProvider] = useState<string>('DeepSeek');
-
-  // 1. Inicializar el estado con valores por defecto seguros para el servidor
   const [folders, setFolders] = useState<Folder[]>(defaultFolders);
-  const [activeChatId, setActiveChatId] = useState<string | null>(defaultFolders[0]?.chats[0]?.id || null);
+  const [activeChatId, setActiveChatId] = useState<string | null>(defaultFolders[0]?.projects[0]?.chats[0]?.id || null);
   const [chatHistories, setChatHistories] = useState<ChatHistories>({
-    [defaultFolders[0]?.chats[0]?.id]: [initialMessage]
+    [defaultFolders[0]?.projects[0]?.chats[0]?.id]: [initialMessage]
   });
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // 2. Cargar desde localStorage en el cliente DESPUÉS del renderizado inicial
   useEffect(() => {
     try {
       const savedFolders = window.localStorage.getItem(FOLDERS_STORAGE_KEY);
@@ -102,13 +113,14 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         loadedHistories = parsed;
       }
       
-      if (loadedFolders.length > 0 && loadedFolders[0].chats.length > 0 && !loadedHistories[loadedFolders[0].chats[0].id]) {
-          loadedHistories[loadedFolders[0].chats[0].id] = [initialMessage];
+      const firstChatId = loadedFolders[0]?.projects[0]?.chats[0]?.id;
+      if (firstChatId && !loadedHistories[firstChatId]) {
+          loadedHistories[firstChatId] = [initialMessage];
       }
       setChatHistories(loadedHistories);
 
-      if (loadedFolders.length > 0 && loadedFolders[0].chats.length > 0) {
-        setActiveChatId(loadedFolders[0].chats[0].id);
+      if (firstChatId) {
+        setActiveChatId(firstChatId);
       } else {
         setActiveChatId(null);
       }
@@ -117,9 +129,8 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setIsLoaded(true);
     }
-  }, []); // El array vacío asegura que esto se ejecute solo una vez en el cliente
+  }, []);
 
-  // 3. Persistir los cambios en localStorage solo después de que la carga inicial se haya completado
   useEffect(() => {
     if (isLoaded) {
       window.localStorage.setItem(FOLDERS_STORAGE_KEY, JSON.stringify(folders));
@@ -151,7 +162,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
   const addFolder = (folderName: string) => {
     if (folderName && !folders.some(f => f.name === folderName)) {
-      const newFolder: Folder = { id: `folder-${Date.now()}`, name: folderName, chats: [] };
+      const newFolder: Folder = { id: `folder-${Date.now()}`, name: folderName, projects: [] };
       setFolders(prev => [...prev, newFolder]);
       toast.success(`Carpeta "${folderName}" creada.`);
     } else {
@@ -159,16 +170,32 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const addChat = (folderId: string, chatName: string) => {
-    const folderExists = folders.some(f => f.id === folderId);
-    const chatNameExists = folders.flatMap(f => f.chats).some(c => c.name === chatName);
-
-    if (folderExists && chatName && !chatNameExists) {
-      const newChat: Chat = { id: `chat-${Date.now()}`, name: chatName };
+  const addProject = (folderId: string, projectName: string) => {
+    const projectExists = folders.flatMap(f => f.projects).some(p => p.name === projectName);
+    if (projectName && !projectExists) {
+      const newProject: Project = { id: `project-${Date.now()}`, name: projectName, chats: [] };
       setFolders(prevFolders =>
         prevFolders.map(folder =>
-          folder.id === folderId ? { ...folder, chats: [...folder.chats, newChat] } : folder
+          folder.id === folderId ? { ...folder, projects: [...folder.projects, newProject] } : folder
         )
+      );
+      toast.success(`Proyecto "${projectName}" creado.`);
+    } else {
+      toast.error("El nombre del proyecto ya existe o es inválido.");
+    }
+  };
+
+  const addChat = (projectId: string, chatName: string) => {
+    const chatNameExists = folders.flatMap(f => f.projects.flatMap(p => p.chats)).some(c => c.name === chatName);
+    if (chatName && !chatNameExists) {
+      const newChat: Chat = { id: `chat-${Date.now()}`, name: chatName };
+      setFolders(prevFolders =>
+        prevFolders.map(folder => ({
+          ...folder,
+          projects: folder.projects.map(project =>
+            project.id === projectId ? { ...project, chats: [...project.chats, newChat] } : project
+          ),
+        }))
       );
       setChatHistories(prev => ({ ...prev, [newChat.id]: [initialMessage] }));
       setActiveChatId(newChat.id);
@@ -189,15 +216,16 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     setChatHistories(prev => ({ ...prev, [activeChatId]: [initialMessage] }));
   };
 
-  const getActiveChat = () => folders.flatMap(f => f.chats).find(c => c.id === activeChatId);
-  const getActiveFolder = () => folders.find(f => f.chats.some(c => c.id === activeChatId));
+  const getActiveChat = () => folders.flatMap(f => f.projects.flatMap(p => p.chats)).find(c => c.id === activeChatId);
+  const getActiveProject = () => folders.flatMap(f => f.projects).find(p => p.chats.some(c => c.id === activeChatId));
+  const getActiveFolder = () => folders.find(f => f.projects.some(p => p.chats.some(c => c.id === activeChatId)));
 
   return (
     <ChatContext.Provider value={{
       activeProvider, setActiveProvider,
-      folders, addFolder, addChat,
+      folders, addFolder, addProject, addChat,
       activeChatId, setActiveChatId,
-      getActiveChat, getActiveFolder,
+      getActiveChat, getActiveProject, getActiveFolder,
       currentPreset, setCurrentPreset,
       activeGpt, setActiveGpt,
       customGpts,

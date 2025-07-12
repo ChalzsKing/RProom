@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Folder, Brain, PlusCircle, MessageSquare, Plus } from 'lucide-react';
+import { Folder, Briefcase, MessageSquare, PlusCircle, Plus, Brain } from 'lucide-react';
 import { useChat } from '@/context/chat-context';
 import { cn } from '@/lib/utils';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,24 +15,29 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 export function SidebarNav() {
   const {
     activeProvider, setActiveProvider,
-    folders, addFolder, addChat,
-    activeChatId, setActiveChatId,
+    folders, addFolder, addProject, addChat,
+    activeChatId, setActiveChatId, getActiveProject
   } = useChat();
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogMode, setDialogMode] = useState<'folder' | 'chat'>('folder');
-  const [dialogContext, setDialogContext] = useState<string>(''); // folderId for new chat
+  const [dialogMode, setDialogMode] = useState<'folder' | 'project' | 'chat'>('folder');
+  const [dialogContext, setDialogContext] = useState<string>(''); // folderId or projectId
   const [newName, setNewName] = useState("");
+  
   const [openFolders, setOpenFolders] = useState<string[]>([]);
+  const [openProjects, setOpenProjects] = useState<string[]>([]);
 
   const providers = ['DeepSeek', 'Gemini'];
 
   useEffect(() => {
-    // Sincroniza el estado del acordeón con las carpetas cargadas
     setOpenFolders(folders.map(f => f.id));
-  }, [folders]);
+    const activeProject = getActiveProject();
+    if (activeProject) {
+      setOpenProjects(prev => [...new Set([...prev, activeProject.id])]);
+    }
+  }, [folders, activeChatId, getActiveProject]);
 
-  const openDialog = (mode: 'folder' | 'chat', context = '') => {
+  const openDialog = (mode: 'folder' | 'project' | 'chat', context = '') => {
     setDialogMode(mode);
     setDialogContext(context);
     setNewName("");
@@ -41,13 +46,17 @@ export function SidebarNav() {
 
   const handleCreate = () => {
     if (newName.trim()) {
-      if (dialogMode === 'folder') {
-        addFolder(newName.trim());
-      } else {
-        addChat(dialogContext, newName.trim());
-      }
+      if (dialogMode === 'folder') addFolder(newName.trim());
+      else if (dialogMode === 'project') addProject(dialogContext, newName.trim());
+      else if (dialogMode === 'chat') addChat(dialogContext, newName.trim());
       setDialogOpen(false);
     }
+  };
+
+  const getDialogTitle = () => {
+    if (dialogMode === 'folder') return 'Crear Nueva Carpeta';
+    if (dialogMode === 'project') return 'Crear Nuevo Proyecto';
+    return 'Crear Nueva Conversación';
   };
 
   return (
@@ -71,36 +80,36 @@ export function SidebarNav() {
                 <AccordionItem key={folder.id} value={folder.id} className="border-b-0">
                   <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-sidebar-accent/50 rounded-md">
                     <div className="flex items-center justify-between w-full">
-                      <div className="flex items-center gap-3">
-                        <Folder className="h-4 w-4" />
-                        <span>{folder.name}</span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 hover:bg-sidebar-accent"
-                        onClick={(e) => { e.stopPropagation(); openDialog('chat', folder.id); }}
-                      >
-                        <Plus className="h-4 w-4" />
-                        <span className="sr-only">Nueva Conversación</span>
+                      <div className="flex items-center gap-3"><Folder className="h-4 w-4" /><span>{folder.name}</span></div>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-sidebar-accent" onClick={(e) => { e.stopPropagation(); openDialog('project', folder.id); }}>
+                        <Plus className="h-4 w-4" /><span className="sr-only">Nuevo Proyecto</span>
                       </Button>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="pl-4 pt-1">
-                    {folder.chats.map((chat) => (
-                      <a
-                        key={chat.id}
-                        href="#"
-                        onClick={(e) => { e.preventDefault(); setActiveChatId(chat.id); }}
-                        className={cn(
-                          "flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-sidebar-primary",
-                          activeChatId === chat.id ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground"
-                        )}
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                        {chat.name}
-                      </a>
-                    ))}
+                    <Accordion type="multiple" className="w-full" value={openProjects} onValueChange={setOpenProjects}>
+                      {folder.projects.map((project) => (
+                        <AccordionItem key={project.id} value={project.id} className="border-b-0">
+                          <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-sidebar-accent/50 rounded-md">
+                            <div className="flex items-center justify-between w-full">
+                              <div className="flex items-center gap-3"><Briefcase className="h-4 w-4" /><span>{project.name}</span></div>
+                              <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-sidebar-accent" onClick={(e) => { e.stopPropagation(); openDialog('chat', project.id); }}>
+                                <Plus className="h-4 w-4" /><span className="sr-only">Nueva Conversación</span>
+                              </Button>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="pl-4 pt-1">
+                            {project.chats.map((chat) => (
+                              <a key={chat.id} href="#" onClick={(e) => { e.preventDefault(); setActiveChatId(chat.id); }}
+                                className={cn("flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-sidebar-primary",
+                                  activeChatId === chat.id ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground")}>
+                                <MessageSquare className="h-4 w-4" />{chat.name}
+                              </a>
+                            ))}
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
                   </AccordionContent>
                 </AccordionItem>
               ))}
@@ -110,10 +119,8 @@ export function SidebarNav() {
             {providers.map((provider) => (
               <a key={provider} href="#" onClick={(e) => { e.preventDefault(); setActiveProvider(provider); }}
                 className={cn("flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-sidebar-primary",
-                  activeProvider === provider ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground"
-                )}>
-                <Brain className="h-4 w-4" />
-                {provider}
+                  activeProvider === provider ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground")}>
+                <Brain className="h-4 w-4" />{provider}
               </a>
             ))}
           </nav>
@@ -123,20 +130,11 @@ export function SidebarNav() {
       <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <AlertDialogContent className="bg-sidebar border-sidebar-border">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-sidebar-primary-foreground">
-              {dialogMode === 'folder' ? 'Crear Nueva Carpeta' : 'Crear Nueva Conversación'}
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-muted-foreground">
-              Ingresa un nombre para tu nueva {dialogMode === 'folder' ? 'carpeta' : 'conversación'}.
-            </AlertDialogDescription>
+            <AlertDialogTitle className="text-sidebar-primary-foreground">{getDialogTitle()}</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">Ingresa un nombre.</AlertDialogDescription>
           </AlertDialogHeader>
-          <Input
-            placeholder={dialogMode === 'folder' ? 'Ej: Trabajo...' : 'Ej: Ideas para mi novela...'}
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleCreate(); }}
-            className="bg-input text-foreground border-input focus-visible:ring-ring"
-          />
+          <Input placeholder="Nombre..." value={newName} onChange={(e) => setNewName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleCreate(); }}
+            className="bg-input text-foreground border-input focus-visible:ring-ring" />
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleCreate} className="bg-primary text-primary-foreground hover:bg-primary/90">Crear</AlertDialogAction>
