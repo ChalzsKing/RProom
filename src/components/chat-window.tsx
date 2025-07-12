@@ -12,6 +12,8 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { ThemeSwitcher } from './theme-switcher';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export function ChatWindow() {
   const {
@@ -114,7 +116,15 @@ export function ChatWindow() {
             <div className="font-bold mb-1">
               {msg.role === 'user' ? 'Tú:' : 'IA:'}
             </div>
-            <div>{msg.content}</div>
+            <div className="markdown-content">
+              {msg.role === 'user' ? (
+                msg.content
+              ) : (
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {msg.content}
+                </ReactMarkdown>
+              )}
+            </div>
             <div className="text-xs opacity-70 mt-2 text-right">
               {format(msg.timestamp, 'HH:mm:ss', { locale: es })}
             </div>

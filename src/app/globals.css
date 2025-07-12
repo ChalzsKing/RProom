@@ -94,3 +94,44 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .markdown-content {
+    @apply text-sm leading-relaxed whitespace-pre-wrap break-words;
+  }
+  .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+    @apply font-bold mt-4 mb-2;
+  }
+  .markdown-content h1 { @apply text-2xl; }
+  .markdown-content h2 { @apply text-xl; }
+  .markdown-content h3 { @apply text-lg; }
+  .markdown-content p {
+    @apply mb-4;
+  }
+  .markdown-content ul, .markdown-content ol {
+    @apply list-inside list-disc pl-4 mb-4;
+  }
+  .markdown-content ol {
+    @apply list-decimal;
+  }
+  .markdown-content li {
+    @apply mb-1;
+  }
+  .markdown-content blockquote {
+    @apply border-l-4 border-current pl-4 italic opacity-70 my-4;
+  }
+  .markdown-content a {
+    @apply text-primary underline hover:no-underline;
+  }
+  /* For inline code */
+  .markdown-content code {
+    @apply bg-muted text-current rounded-sm px-1.5 py-1 font-mono text-xs;
+  }
+  /* For code blocks */
+  .markdown-content pre {
+    @apply bg-muted p-4 rounded-md overflow-x-auto my-4;
+  }
+  .markdown-content pre code {
+    @apply bg-transparent p-0;
+  }
+}
