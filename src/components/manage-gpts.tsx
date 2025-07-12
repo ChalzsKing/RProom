@@ -47,7 +47,7 @@ const gptSchema = z.object({
 
 type GptFormValues = z.infer<typeof gptSchema>;
 
-const tones = ['neutral', 'amistoso', 'formal', 'técnico', 'creativo', 'profesional', 'imaginativo'];
+const tones = ['neutral', 'amistoso', 'formal', 'técnico', 'creativo', 'profesional', 'imaginativo', 'experto (sin filtros)'];
 
 interface ManageGptsProps {
   gpt?: CustomGpt;

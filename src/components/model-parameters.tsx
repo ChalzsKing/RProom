@@ -34,7 +34,7 @@ const modelParametersSchema = z.object({
 
 type ModelParametersFormValues = z.infer<typeof modelParametersSchema>;
 
-const tones = ['neutral', 'amistoso', 'formal', 'técnico', 'creativo', 'profesional', 'imaginativo'];
+const tones = ['neutral', 'amistoso', 'formal', 'técnico', 'creativo', 'profesional', 'imaginativo', 'experto (sin filtros)'];
 
 export function ModelParameters() {
   const { currentPreset, setCurrentPreset } = useChat();
