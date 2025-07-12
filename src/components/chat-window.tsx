@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { ThemeSwitcher } from './theme-switcher';
 
 export function ChatWindow() {
   const {
@@ -48,7 +49,7 @@ export function ChatWindow() {
             temperature: currentPreset.temperature,
             maxLength: currentPreset.maxLength,
             tone: currentPreset.tone,
-            systemPrompt: activeGpt.systemPrompt, // <-- AÑADIDO
+            systemPrompt: activeGpt.systemPrompt,
           }),
         });
 
@@ -92,6 +93,7 @@ export function ChatWindow() {
             Temp: {currentPreset.temperature} | Len: {currentPreset.maxLength} | Tono: {currentPreset.tone}
           </span>
           <ModelParameters />
+          <ThemeSwitcher />
           <Button variant="ghost" size="icon" className="text-foreground hover:text-primary" onClick={handleNewChat}>
             <RefreshCw className="h-5 w-5" />
             <span className="sr-only">Reiniciar Chat</span>
