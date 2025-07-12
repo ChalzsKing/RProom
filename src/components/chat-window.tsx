@@ -13,10 +13,11 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export function ChatWindow() {
-  const { activeProvider, activeProject, activeGpt, currentPreset, messages, addMessage, clearMessages } = useChat();
+  const { activeProvider, getActiveChat, currentPreset, messages, addMessage, clearMessages } = useChat();
   const [inputMessage, setInputMessage] = useState('');
   const [isThinking, setIsThinking] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const activeChat = getActiveChat();
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -39,7 +40,7 @@ export function ChatWindow() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            provider: activeProvider, // Enviar el proveedor activo
+            provider: activeProvider,
             messages: [...messages, { role: 'user', content: userMessageContent }],
             temperature: currentPreset.temperature,
             maxLength: currentPreset.maxLength,
@@ -68,14 +69,14 @@ export function ChatWindow() {
     clearMessages();
     setInputMessage('');
     setIsThinking(false);
-    toast.info('Nuevo chat iniciado.');
+    toast.info('Chat reiniciado.');
   };
 
   return (
     <div className="flex flex-col h-full bg-background text-foreground">
       <header className="flex h-14 items-center justify-between border-b border-border px-4 lg:h-[60px] lg:px-6">
-        <h2 className="text-lg font-semibold">
-          Chat con {activeProvider} - {activeProject}
+        <h2 className="text-lg font-semibold truncate" title={activeChat?.name}>
+          {activeChat?.name || 'Chat'}
         </h2>
         <div className="flex items-center gap-2">
           <CustomGptSelector />
@@ -85,7 +86,7 @@ export function ChatWindow() {
           <ModelParameters />
           <Button variant="ghost" size="icon" className="text-foreground hover:text-primary" onClick={handleNewChat}>
             <RefreshCw className="h-5 w-5" />
-            <span className="sr-only">Nuevo Chat</span>
+            <span className="sr-only">Reiniciar Chat</span>
           </Button>
         </div>
       </header>

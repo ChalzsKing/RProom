@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Folder, Brain, PlusCircle } from 'lucide-react';
+import { Folder, Brain, PlusCircle, MessageSquare } from 'lucide-react';
 import { useChat } from '@/context/chat-context';
 import { cn } from '@/lib/utils';
 import {
@@ -22,21 +22,21 @@ export function SidebarNav() {
   const { 
     activeProvider, 
     setActiveProvider, 
-    activeProject, 
-    setActiveProject, 
-    projects, 
-    addProject 
+    activeChatId, 
+    setActiveChatId, 
+    chats, 
+    addChat 
   } = useChat();
   
-  const [newProjectName, setNewProjectName] = useState("");
+  const [newChatName, setNewChatName] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const providers = ['DeepSeek', 'Gemini'];
 
-  const handleAddProject = () => {
-    if (newProjectName.trim()) {
-      addProject(newProjectName.trim());
-      setNewProjectName("");
+  const handleAddChat = () => {
+    if (newChatName.trim()) {
+      addChat(newChatName.trim());
+      setNewChatName("");
       setIsDialogOpen(false);
     }
   };
@@ -50,53 +50,53 @@ export function SidebarNav() {
         <nav className="grid items-start gap-2 text-sm font-medium">
           <div className="flex items-center justify-between px-3 py-2">
             <span className="text-xs font-semibold text-muted-foreground">
-              Carpetas de Proyectos
+              Conversaciones
             </span>
             <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <AlertDialogTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-sidebar-primary">
                   <PlusCircle className="h-4 w-4" />
-                  <span className="sr-only">Nuevo Proyecto</span>
+                  <span className="sr-only">Nueva Conversación</span>
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent className="bg-sidebar border-sidebar-border">
                 <AlertDialogHeader>
-                  <AlertDialogTitle className="text-sidebar-primary-foreground">Crear Nuevo Proyecto</AlertDialogTitle>
+                  <AlertDialogTitle className="text-sidebar-primary-foreground">Crear Nueva Conversación</AlertDialogTitle>
                   <AlertDialogDescription className="text-muted-foreground">
-                    Ingresa un nombre para tu nueva carpeta de proyecto.
+                    Ingresa un nombre para tu nueva conversación.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <Input
-                  placeholder="Nombre del proyecto..."
-                  value={newProjectName}
-                  onChange={(e) => setNewProjectName(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleAddProject() }}
+                  placeholder="Ej: Ideas para mi novela..."
+                  value={newChatName}
+                  onChange={(e) => setNewChatName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleAddChat() }}
                   className="bg-input text-foreground border-input focus-visible:ring-ring"
                 />
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleAddProject} className="bg-primary text-primary-foreground hover:bg-primary/90">Crear</AlertDialogAction>
+                  <AlertDialogAction onClick={handleAddChat} className="bg-primary text-primary-foreground hover:bg-primary/90">Crear</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
           </div>
-          {projects.map((project) => (
+          {chats.map((chat) => (
             <a
-              key={project}
+              key={chat.id}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-sidebar-primary",
-                activeProject === project
+                activeChatId === chat.id
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "text-sidebar-foreground"
               )}
               href="#"
               onClick={(e) => {
                 e.preventDefault();
-                setActiveProject(project);
+                setActiveChatId(chat.id);
               }}
             >
-              <Folder className="h-4 w-4" />
-              {project}
+              <MessageSquare className="h-4 w-4" />
+              {chat.name}
             </a>
           ))}
           <div className="mt-4 px-3 py-2 text-xs font-semibold text-muted-foreground">

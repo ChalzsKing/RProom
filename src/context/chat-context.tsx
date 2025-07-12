@@ -11,7 +11,7 @@ interface Preset {
 
 interface CustomGpt extends Preset {
   id: string;
-  name: string;
+  name:string;
   description: string;
 }
 
@@ -22,15 +22,21 @@ interface Message {
   timestamp: Date;
 }
 
-type ChatHistories = Record<string, Message[]>;
+interface Chat {
+  id: string;
+  name: string;
+}
+
+type ChatHistories = Record<string, Message[]>; // Keyed by chat ID
 
 interface ChatContextType {
   activeProvider: string;
   setActiveProvider: (provider: string) => void;
-  activeProject: string;
-  setActiveProject: (project: string) => void;
-  projects: string[];
-  addProject: (projectName: string) => void;
+  activeChatId: string | null;
+  setActiveChatId: (chatId: string) => void;
+  chats: Chat[];
+  addChat: (chatName: string) => void;
+  getActiveChat: () => Chat | undefined;
   currentPreset: Preset;
   setCurrentPreset: (preset: Preset) => void;
   activeGpt: CustomGpt;
@@ -45,23 +51,23 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 const initialMessage: Message = { id: '1', role: 'assistant', content: '¡Hola! ¿En qué puedo ayudarte hoy?', timestamp: new Date() };
 const CHAT_HISTORY_STORAGE_KEY = 'matrix_ai_chat_histories';
-const PROJECTS_STORAGE_KEY = 'matrix_ai_projects';
+const CHATS_STORAGE_KEY = 'matrix_ai_chats';
 
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [activeProvider, setActiveProvider] = useState<string>('DeepSeek');
 
-  const [projects, setProjects] = useState<string[]>(() => {
-    if (typeof window === 'undefined') return ['Proyecto Alpha'];
+  const [chats, setChats] = useState<Chat[]>(() => {
+    if (typeof window === 'undefined') return [{ id: 'default', name: 'Conversación General' }];
     try {
-      const saved = window.localStorage.getItem(PROJECTS_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : ['Proyecto Alpha'];
+      const saved = window.localStorage.getItem(CHATS_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [{ id: 'default', name: 'Conversación General' }];
     } catch (e) {
-      console.error("Error al cargar proyectos desde localStorage", e);
-      return ['Proyecto Alpha'];
+      console.error("Error al cargar chats desde localStorage", e);
+      return [{ id: 'default', name: 'Conversación General' }];
     }
   });
 
-  const [activeProject, setActiveProject] = useState<string>(projects[0] || 'Proyecto Alpha');
+  const [activeChatId, setActiveChatId] = useState<string | null>(chats[0]?.id || null);
 
   const [chatHistories, setChatHistories] = useState<ChatHistories>(() => {
     let loadedHistories: ChatHistories = {};
@@ -70,8 +76,8 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         const saved = window.localStorage.getItem(CHAT_HISTORY_STORAGE_KEY);
         if (saved) {
           const parsed = JSON.parse(saved);
-          Object.keys(parsed).forEach(project => {
-            parsed[project] = parsed[project].map((msg: any) => ({
+          Object.keys(parsed).forEach(chatId => {
+            parsed[chatId] = parsed[chatId].map((msg: any) => ({
               ...msg,
               timestamp: new Date(msg.timestamp),
             }));
@@ -82,19 +88,17 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         console.error("Error al cargar el historial del chat desde localStorage", e);
       }
     }
-    projects.forEach(project => {
-      if (!loadedHistories[project]) {
-        loadedHistories[project] = [initialMessage];
-      }
-    });
+    if (!loadedHistories[chats[0]?.id]) {
+      loadedHistories[chats[0]?.id] = [initialMessage];
+    }
     return loadedHistories;
   });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projects));
+      window.localStorage.setItem(CHATS_STORAGE_KEY, JSON.stringify(chats));
     }
-  }, [projects]);
+  }, [chats]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -123,22 +127,24 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const addProject = (projectName: string) => {
-    if (projectName && !projects.includes(projectName)) {
-      const newProjects = [...projects, projectName];
-      setProjects(newProjects);
+  const addChat = (chatName: string) => {
+    if (chatName && !chats.some(c => c.name === chatName)) {
+      const newChat: Chat = { id: Date.now().toString(), name: chatName };
+      const newChats = [...chats, newChat];
+      setChats(newChats);
       setChatHistories(prev => ({
         ...prev,
-        [projectName]: [initialMessage]
+        [newChat.id]: [initialMessage]
       }));
-      setActiveProject(projectName);
-      toast.success(`Proyecto "${projectName}" creado.`);
+      setActiveChatId(newChat.id);
+      toast.success(`Conversación "${chatName}" creada.`);
     } else {
-      toast.error("El nombre del proyecto ya existe o es inválido.");
+      toast.error("El nombre de la conversación ya existe o es inválido.");
     }
   };
 
   const addMessage = (role: 'user' | 'assistant', content: string) => {
+    if (!activeChatId) return;
     const newMessage: Message = {
       id: Date.now().toString(),
       role,
@@ -147,31 +153,35 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     };
     setChatHistories(prevHistories => ({
       ...prevHistories,
-      [activeProject]: [...(prevHistories[activeProject] || []), newMessage],
+      [activeChatId]: [...(prevHistories[activeChatId] || []), newMessage],
     }));
   };
 
   const clearMessages = () => {
+    if (!activeChatId) return;
     setChatHistories(prevHistories => ({
       ...prevHistories,
-      [activeProject]: [initialMessage],
+      [activeChatId]: [initialMessage],
     }));
   };
+
+  const getActiveChat = () => chats.find(c => c.id === activeChatId);
 
   return (
     <ChatContext.Provider value={{
       activeProvider,
       setActiveProvider,
-      activeProject,
-      setActiveProject,
-      projects,
-      addProject,
+      activeChatId,
+      setActiveChatId,
+      chats,
+      addChat,
+      getActiveChat,
       currentPreset,
       setCurrentPreset,
       activeGpt,
       setActiveGpt,
       customGpts,
-      messages: chatHistories[activeProject] || [],
+      messages: activeChatId ? chatHistories[activeChatId] || [] : [],
       addMessage,
       clearMessages,
     }}>
