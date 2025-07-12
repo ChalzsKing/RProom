@@ -78,26 +78,52 @@ export function SidebarNav() {
             <Accordion type="multiple" className="w-full" value={openFolders} onValueChange={setOpenFolders}>
               {folders.map((folder) => (
                 <AccordionItem key={folder.id} value={folder.id} className="border-b-0">
-                  <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-sidebar-accent/50 rounded-md">
-                    <div className="flex items-center justify-between w-full">
-                      <div className="flex items-center gap-3"><Folder className="h-4 w-4" /><span>{folder.name}</span></div>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-sidebar-accent" onClick={(e) => { e.stopPropagation(); openDialog('project', folder.id); }}>
-                        <Plus className="h-4 w-4" /><span className="sr-only">Nuevo Proyecto</span>
-                      </Button>
-                    </div>
-                  </AccordionTrigger>
+                  <div className="flex items-center w-full rounded-md hover:bg-sidebar-accent/50 group">
+                    <AccordionTrigger className="flex-1 px-3 py-2 text-left hover:no-underline">
+                      <div className="flex items-center gap-3">
+                        <Folder className="h-4 w-4" />
+                        <span>{folder.name}</span>
+                      </div>
+                    </AccordionTrigger>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 mr-2 shrink-0 hover:bg-sidebar-accent"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        openDialog('project', folder.id);
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span className="sr-only">Nuevo Proyecto</span>
+                    </Button>
+                  </div>
                   <AccordionContent className="pl-4 pt-1">
                     <Accordion type="multiple" className="w-full" value={openProjects} onValueChange={setOpenProjects}>
                       {(folder.projects || []).map((project) => (
                         <AccordionItem key={project.id} value={project.id} className="border-b-0">
-                          <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-sidebar-accent/50 rounded-md">
-                            <div className="flex items-center justify-between w-full">
-                              <div className="flex items-center gap-3"><Briefcase className="h-4 w-4" /><span>{project.name}</span></div>
-                              <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-sidebar-accent" onClick={(e) => { e.stopPropagation(); openDialog('chat', project.id); }}>
-                                <Plus className="h-4 w-4" /><span className="sr-only">Nueva Conversación</span>
-                              </Button>
-                            </div>
-                          </AccordionTrigger>
+                          <div className="flex items-center w-full rounded-md hover:bg-sidebar-accent/50 group">
+                            <AccordionTrigger className="flex-1 px-3 py-2 text-left hover:no-underline">
+                              <div className="flex items-center gap-3">
+                                <Briefcase className="h-4 w-4" />
+                                <span>{project.name}</span>
+                              </div>
+                            </AccordionTrigger>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 mr-2 shrink-0 hover:bg-sidebar-accent"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                openDialog('chat', project.id);
+                              }}
+                            >
+                              <Plus className="h-4 w-4" />
+                              <span className="sr-only">Nueva Conversación</span>
+                            </Button>
+                          </div>
                           <AccordionContent className="pl-4 pt-1">
                             {(project.chats || []).map((chat) => (
                               <a key={chat.id} href="#" onClick={(e) => { e.preventDefault(); setActiveChatId(chat.id); }}
