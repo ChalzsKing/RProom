@@ -1,4 +1,3 @@
-import * as DeepSeekModule from 'deepseek'; // Importa todo el módulo
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
@@ -16,9 +15,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Server configuration error: DeepSeek API key missing.' }, { status: 500 });
     }
 
-    // Accede al constructor DeepSeek a través de la propiedad 'default' del módulo importado
-    // Esto es un patrón común para resolver problemas de importación/exportación con Webpack
-    const deepseek = new (DeepSeekModule as any).default({
+    // Importación dinámica de DeepSeek
+    const { default: DeepSeek } = await import('deepseek');
+
+    const deepseek = new DeepSeek({
       apiKey: deepseekApiKey,
     });
 
