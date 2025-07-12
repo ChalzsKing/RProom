@@ -6,6 +6,19 @@ export default {
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/lib/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  safelist: [
+    'bg-blue-600', 'text-blue-50',
+    'bg-emerald-600', 'text-emerald-50',
+    'bg-purple-600', 'text-purple-50',
+    'bg-red-600', 'text-red-50',
+    'bg-amber-500', 'text-amber-950',
+    'bg-indigo-600', 'text-indigo-50',
+    'bg-pink-600', 'text-pink-50',
+    'bg-teal-600', 'text-teal-50',
+    'bg-orange-600', 'text-orange-50',
+    'bg-cyan-600', 'text-cyan-50',
   ],
   theme: {
     extend: {
