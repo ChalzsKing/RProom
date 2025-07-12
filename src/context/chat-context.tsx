@@ -2,17 +2,28 @@
 
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 
+interface Preset {
+  temperature: number;
+  maxLength: number;
+  tone: string;
+}
+
+interface CustomGpt extends Preset {
+  id: string;
+  name: string;
+  description: string;
+}
+
 interface ChatContextType {
   activeProvider: string;
   setActiveProvider: (provider: string) => void;
   activeProject: string;
   setActiveProject: (project: string) => void;
-  currentPreset: {
-    temperature: number;
-    maxLength: number;
-    tone: string;
-  };
-  setCurrentPreset: (preset: { temperature: number; maxLength: number; tone: string }) => void;
+  currentPreset: Preset;
+  setCurrentPreset: (preset: Preset) => void;
+  activeGpt: CustomGpt;
+  setActiveGpt: (gptId: string) => void;
+  customGpts: CustomGpt[];
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -20,14 +31,61 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [activeProvider, setActiveProvider] = useState<string>('DeepSeek'); // Proveedor por defecto
   const [activeProject, setActiveProject] = useState<string>('Proyecto Alpha'); // Proyecto por defecto
-  const [currentPreset, setCurrentPreset] = useState({
-    temperature: 0.7,
-    maxLength: 500,
-    tone: 'neutral',
-  });
+
+  const customGpts: CustomGpt[] = [
+    {
+      id: 'general-assistant',
+      name: 'Asistente General',
+      description: 'Un asistente versátil para tareas cotidianas.',
+      temperature: 0.7,
+      maxLength: 500,
+      tone: 'neutral',
+    },
+    {
+      id: 'code-helper',
+      name: 'Asistente de Código',
+      description: 'Optimizado para generar y depurar código.',
+      temperature: 0.5,
+      maxLength: 1000,
+      tone: 'technical',
+    },
+    {
+      id: 'creative-writer',
+      name: 'Redactor Creativo',
+      description: 'Ideal para brainstorming y escritura creativa.',
+      temperature: 0.9,
+      maxLength: 750,
+      tone: 'imaginative',
+    },
+  ];
+
+  const [activeGpt, setActiveGptState] = useState<CustomGpt>(customGpts[0]);
+  const [currentPreset, setCurrentPreset] = useState<Preset>(customGpts[0]);
+
+  const setActiveGpt = (gptId: string) => {
+    const selectedGpt = customGpts.find(gpt => gpt.id === gptId);
+    if (selectedGpt) {
+      setActiveGptState(selectedGpt);
+      setCurrentPreset({
+        temperature: selectedGpt.temperature,
+        maxLength: selectedGpt.maxLength,
+        tone: selectedGpt.tone,
+      });
+    }
+  };
 
   return (
-    <ChatContext.Provider value={{ activeProvider, setActiveProvider, activeProject, setActiveProject, currentPreset, setCurrentPreset }}>
+    <ChatContext.Provider value={{
+      activeProvider,
+      setActiveProvider,
+      activeProject,
+      setActiveProject,
+      currentPreset,
+      setCurrentPreset,
+      activeGpt,
+      setActiveGpt,
+      customGpts,
+    }}>
       {children}
     </ChatContext.Provider>
   );

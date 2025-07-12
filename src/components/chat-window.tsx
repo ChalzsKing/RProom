@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Send } from 'lucide-react';
 import { useChat } from '@/context/chat-context';
-import { PresetSettings } from './preset-settings'; // Importar el nuevo componente
+import { ModelParameters } from './model-parameters'; // Importar el componente renombrado
+import { CustomGptSelector } from './custom-gpt-selector'; // Importar el nuevo selector
 
 export function ChatWindow() {
-  const { activeProvider, activeProject, currentPreset } = useChat();
+  const { activeProvider, activeProject, activeGpt, currentPreset } = useChat();
 
   return (
     <div className="flex flex-col h-full bg-background text-foreground">
@@ -17,10 +18,11 @@ export function ChatWindow() {
           Chat con {activeProvider} - {activeProject}
         </h2>
         <div className="flex items-center gap-2">
+          <CustomGptSelector /> {/* Añadir el selector de GPTs */}
           <span className="text-xs text-muted-foreground">
             Temp: {currentPreset.temperature} | Len: {currentPreset.maxLength} | Tono: {currentPreset.tone}
           </span>
-          <PresetSettings /> {/* Añadir el botón de configuración */}
+          <ModelParameters /> {/* Añadir el botón de configuración */}
         </div>
       </header>
       <div className="flex-1 overflow-y-auto p-4 font-mono text-sm">

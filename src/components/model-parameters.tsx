@@ -19,20 +19,20 @@ import { Label } from '@/components/ui/label';
 import { useChat } from '@/context/chat-context';
 import { Settings } from 'lucide-react';
 
-const presetSchema = z.object({
+const modelParametersSchema = z.object({
   temperature: z.number().min(0).max(1).default(0.7),
   maxLength: z.number().min(1).max(2000).default(500),
   tone: z.string().min(1).max(50).default('neutral'),
 });
 
-type PresetFormValues = z.infer<typeof presetSchema>;
+type ModelParametersFormValues = z.infer<typeof modelParametersSchema>;
 
-export function PresetSettings() {
+export function ModelParameters() {
   const { currentPreset, setCurrentPreset } = useChat();
   const [open, setOpen] = React.useState(false);
 
-  const form = useForm<PresetFormValues>({
-    resolver: zodResolver(presetSchema),
+  const form = useForm<ModelParametersFormValues>({
+    resolver: zodResolver(modelParametersSchema),
     defaultValues: currentPreset,
   });
 
@@ -40,7 +40,7 @@ export function PresetSettings() {
     form.reset(currentPreset);
   }, [currentPreset, form]);
 
-  const onSubmit = (data: PresetFormValues) => {
+  const onSubmit = (data: ModelParametersFormValues) => {
     setCurrentPreset(data);
     setOpen(false); // Cerrar el panel después de guardar
   };
@@ -50,14 +50,14 @@ export function PresetSettings() {
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="text-foreground hover:text-primary">
           <Settings className="h-5 w-5" />
-          <span className="sr-only">Configuración de Presets</span>
+          <span className="sr-only">Configuración de Parámetros del Modelo</span>
         </Button>
       </SheetTrigger>
       <SheetContent className="w-[400px] sm:w-[540px] bg-sidebar text-sidebar-foreground border-l border-sidebar-border">
         <SheetHeader>
-          <SheetTitle className="text-sidebar-primary-foreground">Configuración de Presets</SheetTitle>
+          <SheetTitle className="text-sidebar-primary-foreground">Parámetros del Modelo</SheetTitle>
           <SheetDescription className="text-muted-foreground">
-            Ajusta los parámetros del modelo de IA.
+            Ajusta los parámetros del modelo de IA para el GPT personalizado actual.
           </SheetDescription>
         </SheetHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
