@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 
+// Usando `require` para manejar un módulo CommonJS que podría tener problemas de exportación.
+const DeepSeekModule = require('deepseek');
+
 export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
@@ -15,8 +18,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Server configuration error: DeepSeek API key missing.' }, { status: 500 });
     }
 
-    // Importación dinámica de DeepSeek
-    const { default: DeepSeek } = await import('deepseek');
+    // Comprobamos si el constructor está en la propiedad 'default' o si es el módulo mismo.
+    const DeepSeek = DeepSeekModule.default || DeepSeekModule;
 
     const deepseek = new DeepSeek({
       apiKey: deepseekApiKey,
@@ -29,10 +32,10 @@ export async function POST(req: Request) {
     }));
 
     const chatCompletion = await deepseek.chat.completions.create({
-      model: "deepseek-chat", // Puedes cambiar el modelo si DeepSeek ofrece otros
+      model: "deepseek-chat",
       messages: deepseekMessages,
-      temperature: 0.7, // Usaremos un valor fijo por ahora, luego lo haremos dinámico
-      max_tokens: 500, // Usaremos un valor fijo por ahora, luego lo haremos dinámico
+      temperature: 0.7,
+      max_tokens: 500,
     });
 
     const assistantMessage = chatCompletion.choices[0].message.content;
@@ -40,7 +43,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: assistantMessage });
   } catch (error: any) {
     console.error('Error calling DeepSeek API or processing request:', error);
-    // Si el error tiene un mensaje, lo incluimos para depuración
     return NextResponse.json({ error: `Failed to get response from AI: ${error.message || 'Unknown error'}` }, { status: 500 });
   }
 }
