@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Folder, Briefcase, MessageSquare, PlusCircle, Plus, Brain, Sparkles, Pencil, RotateCcw, User, Users, Trash2 } from 'lucide-react';
+import { Folder, Briefcase, MessageSquare, PlusCircle, Plus, Brain, Sparkles, Pencil, RotateCcw, User, Users, Trash2, Bot } from 'lucide-react';
 import { useChat } from '@/context/chat-context';
 import { cn } from '@/lib/utils';
 import {
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ManageNarrators } from './manage-narrators';
 import { ManagePcs } from './manage-pcs';
+import { ManageNpcs } from './manage-npcs';
 import { ManageAdventure } from './manage-adventure';
 
 export function SidebarNav() {
@@ -34,6 +35,7 @@ export function SidebarNav() {
   const [openCampaigns, setOpenCampaigns] = useState<string[]>([]);
   const [openAdventures, setOpenAdventures] = useState<string[]>([]);
   const [openCharacters, setOpenCharacters] = useState<string[]>([]);
+  const [openNpcs, setOpenNpcs] = useState<string[]>([]);
 
   const providers = ['DeepSeek', 'Gemini'];
 
@@ -43,6 +45,7 @@ export function SidebarNav() {
       if (activeCampaign) {
         setOpenCampaigns(prev => [...new Set([...prev, activeCampaign.id])]);
         setOpenCharacters(prev => [...new Set([...prev, activeCampaign.id])]);
+        setOpenNpcs(prev => [...new Set([...prev, activeCampaign.id])]);
       }
       const activeAdventure = getActiveAdventure();
       if (activeAdventure) {
@@ -182,7 +185,7 @@ export function SidebarNav() {
                           <AccordionTrigger className="flex-1 px-3 py-2 text-left hover:no-underline">
                             <div className="flex items-center gap-3">
                               <Users className="h-4 w-4" />
-                              <span>Personajes</span>
+                              <span>Personajes (PCs)</span>
                             </div>
                           </AccordionTrigger>
                           <ManagePcs campaignId={campaign.id}>
@@ -205,6 +208,41 @@ export function SidebarNav() {
                                   <span className="sr-only">Editar Personaje</span>
                                 </Button>
                               </ManagePcs>
+                            </div>
+                          ))}
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+
+                    <Accordion type="multiple" className="w-full" value={openNpcs} onValueChange={setOpenNpcs}>
+                      <AccordionItem value={campaign.id} className="border-b-0">
+                        <div className="flex items-center w-full rounded-md hover:bg-accent/50 group">
+                          <AccordionTrigger className="flex-1 px-3 py-2 text-left hover:no-underline">
+                            <div className="flex items-center gap-3">
+                              <Bot className="h-4 w-4" />
+                              <span>PNJs</span>
+                            </div>
+                          </AccordionTrigger>
+                          <ManageNpcs campaignId={campaign.id}>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 mr-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent">
+                              <Plus className="h-4 w-4" />
+                              <span className="sr-only">Nuevo PNJ</span>
+                            </Button>
+                          </ManageNpcs>
+                        </div>
+                        <AccordionContent className="pl-4 pt-1">
+                          {(campaign.nonPlayerCharacters || []).map((npc) => (
+                            <div key={npc.id} className="flex items-center justify-between rounded-lg hover:bg-accent/50 group">
+                              <div className="flex-1 flex items-center gap-3 rounded-lg px-3 py-2 text-foreground">
+                                <User className="h-4 w-4 opacity-70" />
+                                <span className="truncate flex-1">{npc.name}</span>
+                              </div>
+                              <ManageNpcs npc={npc} campaignId={campaign.id}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 mr-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Pencil className="h-4 w-4" />
+                                  <span className="sr-only">Editar PNJ</span>
+                                </Button>
+                              </ManageNpcs>
                             </div>
                           ))}
                         </AccordionContent>

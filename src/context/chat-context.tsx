@@ -21,6 +21,8 @@ export interface PlayerCharacter {
   description: string;
 }
 
+export type NonPlayerCharacter = PlayerCharacter; // Alias, ya que la estructura es la misma
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -47,6 +49,7 @@ export interface Campaign {
   name: string;
   adventures: Adventure[];
   playerCharacters: PlayerCharacter[];
+  nonPlayerCharacters: NonPlayerCharacter[];
 }
 
 type ChatHistories = Record<string, Message[]>; // Keyed by session ID
@@ -79,6 +82,10 @@ interface ChatContextType {
   playerCharacters: PlayerCharacter[]; // Characters of the active campaign
   addPlayerCharacter: (campaignId: string, pc: Omit<PlayerCharacter, 'id'>) => void;
   updatePlayerCharacter: (campaignId: string, pcId: string, pcData: Omit<PlayerCharacter, 'id'>) => void;
+
+  nonPlayerCharacters: NonPlayerCharacter[]; // NPCs of the active campaign
+  addNonPlayerCharacter: (campaignId: string, npc: Omit<NonPlayerCharacter, 'id'>) => void;
+  updateNonPlayerCharacter: (campaignId: string, npcId: string, npcData: Omit<NonPlayerCharacter, 'id'>) => void;
 
   messages: Message[];
   addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => void;
@@ -118,6 +125,9 @@ const defaultCampaigns: Campaign[] = [
       { id: 'pc-1', name: 'Kaelen, el Elfo', description: 'Un explorador ágil y sabio de los bosques del norte.' },
       { id: 'pc-2', name: 'Brog, el Bárbaro', description: 'Un guerrero formidable cuya fuerza solo es superada por su apetito.' },
     ],
+    nonPlayerCharacters: [
+        { id: 'npc-1', name: 'Sildar Hallwinter', description: 'Un noble guerrero de Aguasprofundas que parece estar en problemas.' },
+    ],
   },
 ];
 
@@ -144,6 +154,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       loadedCampaigns = loadedCampaigns.map((campaign: any) => ({
         ...campaign,
         playerCharacters: campaign.playerCharacters || [],
+        nonPlayerCharacters: campaign.nonPlayerCharacters || [],
       }));
       
       setCampaigns(loadedCampaigns);
@@ -248,8 +259,27 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     toast.success(`Personaje "${pcData.name}" actualizado.`);
   };
 
+  const addNonPlayerCharacter = (campaignId: string, npcData: Omit<NonPlayerCharacter, 'id'>) => {
+    const newNpc: NonPlayerCharacter = { ...npcData, id: `npc-${Date.now()}` };
+    setCampaigns(prev => prev.map(c => 
+      c.id === campaignId 
+        ? { ...c, nonPlayerCharacters: [...c.nonPlayerCharacters, newNpc] } 
+        : c
+    ));
+    toast.success(`PNJ "${newNpc.name}" creado en la campaña.`);
+  };
+
+  const updateNonPlayerCharacter = (campaignId: string, npcId: string, npcData: Omit<NonPlayerCharacter, 'id'>) => {
+    setCampaigns(prev => prev.map(c => 
+      c.id === campaignId
+        ? { ...c, nonPlayerCharacters: c.nonPlayerCharacters.map(npc => npc.id === npcId ? { ...npc, ...npcData } : npc) }
+        : c
+    ));
+    toast.success(`PNJ "${npcData.name}" actualizado.`);
+  };
+
   const addCampaign = (campaignName: string) => {
-    const newCampaign: Campaign = { id: `campaign-${Date.now()}`, name: campaignName, adventures: [], playerCharacters: [] };
+    const newCampaign: Campaign = { id: `campaign-${Date.now()}`, name: campaignName, adventures: [], playerCharacters: [], nonPlayerCharacters: [] };
     setCampaigns(prev => [...prev, newCampaign]);
     toast.success(`Campaña "${campaignName}" creada.`);
   };
@@ -334,6 +364,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   
   const activeCampaign = getActiveCampaign();
   const playerCharacters = activeCampaign ? activeCampaign.playerCharacters : [];
+  const nonPlayerCharacters = activeCampaign ? activeCampaign.nonPlayerCharacters : [];
 
   if (!isLoaded) {
     return <LoadingScreen />;
@@ -348,6 +379,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       activeNarrator, setActiveNarrator,
       narrators, addNarrator, updateNarrator,
       playerCharacters, addPlayerCharacter, updatePlayerCharacter,
+      nonPlayerCharacters, addNonPlayerCharacter, updateNonPlayerCharacter,
       messages: activeSessionId ? chatHistories[activeSessionId] || [] : [],
       addMessage, clearMessages,
       sceneStates, updateSceneState,
