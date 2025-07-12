@@ -88,7 +88,7 @@ export function SidebarNav() {
                   </AccordionTrigger>
                   <AccordionContent className="pl-4 pt-1">
                     <Accordion type="multiple" className="w-full" value={openProjects} onValueChange={setOpenProjects}>
-                      {folder.projects.map((project) => (
+                      {(folder.projects || []).map((project) => (
                         <AccordionItem key={project.id} value={project.id} className="border-b-0">
                           <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-sidebar-accent/50 rounded-md">
                             <div className="flex items-center justify-between w-full">
@@ -99,7 +99,7 @@ export function SidebarNav() {
                             </div>
                           </AccordionTrigger>
                           <AccordionContent className="pl-4 pt-1">
-                            {project.chats.map((chat) => (
+                            {(project.chats || []).map((chat) => (
                               <a key={chat.id} href="#" onClick={(e) => { e.preventDefault(); setActiveChatId(chat.id); }}
                                 className={cn("flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-sidebar-primary",
                                   activeChatId === chat.id ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground")}>
