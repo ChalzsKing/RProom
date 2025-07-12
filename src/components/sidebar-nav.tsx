@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Folder, Briefcase, MessageSquare, PlusCircle, Plus, Brain, Sparkles, Pencil, RotateCcw, User, Users } from 'lucide-react';
+import { Folder, Briefcase, MessageSquare, PlusCircle, Plus, Brain, Sparkles, Pencil, RotateCcw, User, Users, Trash2 } from 'lucide-react';
 import { useChat } from '@/context/chat-context';
 import { cn } from '@/lib/utils';
 import {
@@ -18,13 +18,15 @@ import { ManageAdventure } from './manage-adventure';
 export function SidebarNav() {
   const {
     activeProvider, setActiveProvider,
-    campaigns, addCampaign, addSession,
+    campaigns, addCampaign, deleteCampaign, addSession,
     activeSessionId, setActiveSessionId, getActiveAdventure,
     narrators, activeNarrator, setActiveNarrator,
   } = useChat();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [campaignToDelete, setCampaignToDelete] = useState<string | null>(null);
   const [dialogMode, setDialogMode] = useState<'campaign' | 'session'>('campaign');
   const [dialogContext, setDialogContext] = useState<string>(''); // campaignId or adventureId
   const [newName, setNewName] = useState("");
@@ -62,6 +64,19 @@ export function SidebarNav() {
       else if (dialogMode === 'session') addSession(dialogContext, newName.trim());
       setDialogOpen(false);
     }
+  };
+
+  const openDeleteDialog = (campaignId: string) => {
+    setCampaignToDelete(campaignId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteCampaign = () => {
+    if (campaignToDelete) {
+      deleteCampaign(campaignToDelete);
+    }
+    setDeleteDialogOpen(false);
+    setCampaignToDelete(null);
   };
 
   const handleResetApp = () => {
@@ -104,13 +119,22 @@ export function SidebarNav() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 mr-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent"
+                        className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent"
                         onClick={(e) => { e.stopPropagation(); }}
                       >
                         <Plus className="h-4 w-4" />
                         <span className="sr-only">Nueva Aventura</span>
                       </Button>
                     </ManageAdventure>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 mr-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      onClick={(e) => { e.stopPropagation(); openDeleteDialog(campaign.id); }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Eliminar Campaña</span>
+                    </Button>
                   </div>
                   <AccordionContent className="pl-4 pt-1 space-y-1">
                     <Accordion type="multiple" className="w-full" value={openAdventures} onValueChange={setOpenAdventures}>
@@ -263,6 +287,23 @@ export function SidebarNav() {
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleResetApp} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Sí, restablecer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="bg-background border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-foreground">¿Eliminar campaña?</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              Esta acción es irreversible. Se eliminará la campaña y todos sus datos asociados (aventuras, sesiones, personajes, etc.).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setCampaignToDelete(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteCampaign} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Sí, eliminar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

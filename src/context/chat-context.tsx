@@ -60,6 +60,7 @@ interface ChatContextType {
   setActiveProvider: (provider: string) => void;
   campaigns: Campaign[];
   addCampaign: (campaignName: string) => void;
+  deleteCampaign: (campaignId: string) => void;
   addAdventure: (campaignId: string, adventureData: { name: string; premise: string }) => void;
   updateAdventure: (adventureId: string, adventureData: Omit<Adventure, 'id' | 'sessions'>) => void;
   addSession: (adventureId: string, sessionName: string) => void;
@@ -253,6 +254,30 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     toast.success(`Campaña "${campaignName}" creada.`);
   };
 
+  const deleteCampaign = (campaignId: string) => {
+    const campaignToDelete = campaigns.find(c => c.id === campaignId);
+    if (!campaignToDelete) return;
+
+    const sessionIdsToDelete = campaignToDelete.adventures.flatMap(a => a.sessions.map(s => s.id));
+    const updatedCampaigns = campaigns.filter(c => c.id !== campaignId);
+    setCampaigns(updatedCampaigns);
+
+    setChatHistories(prev => {
+      const newHistories = { ...prev };
+      sessionIdsToDelete.forEach(id => {
+        delete newHistories[id];
+      });
+      return newHistories;
+    });
+
+    if (activeSessionId && sessionIdsToDelete.includes(activeSessionId)) {
+      const newActiveSessionId = updatedCampaigns[0]?.adventures[0]?.sessions[0]?.id || null;
+      setActiveSessionId(newActiveSessionId);
+    }
+    
+    toast.success(`Campaña "${campaignToDelete.name}" eliminada.`);
+  };
+
   const addAdventure = (campaignId: string, adventureData: { name: string; premise: string }) => {
     const newAdventure: Adventure = { ...adventureData, id: `adventure-${Date.now()}`, sessions: [] };
     setCampaigns(prev =>
@@ -317,7 +342,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   return (
     <ChatContext.Provider value={{
       activeProvider, setActiveProvider,
-      campaigns, addCampaign, addAdventure, updateAdventure, addSession,
+      campaigns, addCampaign, deleteCampaign, addAdventure, updateAdventure, addSession,
       activeSessionId, setActiveSessionId,
       getActiveSession, getActiveAdventure, getActiveCampaign,
       activeNarrator, setActiveNarrator,
