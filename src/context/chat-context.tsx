@@ -5,17 +5,20 @@ import { toast } from 'sonner';
 import { LoadingScreen } from '@/components/loading-screen';
 
 // --- Tipos de Datos ---
-interface Preset {
+export interface Narrator {
+  id: string;
+  name: string;
+  description: string;
+  systemPrompt: string;
   temperature: number;
   maxLength: number;
   tone: string;
 }
 
-export interface CustomGpt extends Preset {
+export interface PlayerCharacter {
   id: string;
-  name:string;
+  name: string;
   description: string;
-  systemPrompt: string;
 }
 
 interface Message {
@@ -23,78 +26,86 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  authorId: string;
+  authorName: string;
 }
 
-interface Chat {
+interface Session {
   id: string;
   name: string;
 }
 
-interface Project {
+interface Adventure {
   id: string;
   name: string;
-  chats: Chat[];
+  sessions: Session[];
 }
 
-interface Folder {
+interface Campaign {
   id: string;
   name: string;
-  projects: Project[];
+  adventures: Adventure[];
 }
 
-type ChatHistories = Record<string, Message[]>; // Keyed by chat ID
+type ChatHistories = Record<string, Message[]>; // Keyed by session ID
 
 // --- Tipo del Contexto ---
 interface ChatContextType {
   activeProvider: string;
   setActiveProvider: (provider: string) => void;
-  folders: Folder[];
-  addFolder: (folderName: string) => void;
-  addProject: (folderId: string, projectName: string) => void;
-  addChat: (projectId: string, chatName: string) => void;
-  activeChatId: string | null;
-  setActiveChatId: (chatId: string) => void;
-  getActiveChat: () => Chat | undefined;
-  getActiveProject: () => Project | undefined;
-  getActiveFolder: () => Folder | undefined;
-  currentPreset: Preset;
-  setCurrentPreset: (preset: Preset) => void;
-  activeGpt: CustomGpt;
-  setActiveGpt: (gptId: string) => void;
-  customGpts: CustomGpt[];
-  addCustomGpt: (gpt: Omit<CustomGpt, 'id'>) => void;
-  updateCustomGpt: (gptId: string, gptData: Omit<CustomGpt, 'id' | 'systemPrompt'> & { systemPrompt: string }) => void;
+  campaigns: Campaign[];
+  addCampaign: (campaignName: string) => void;
+  addAdventure: (campaignId: string, adventureName: string) => void;
+  addSession: (adventureId: string, sessionName: string) => void;
+  activeSessionId: string | null;
+  setActiveSessionId: (sessionId: string) => void;
+  getActiveSession: () => Session | undefined;
+  getActiveAdventure: () => Adventure | undefined;
+  getActiveCampaign: () => Campaign | undefined;
+  
+  activeNarrator: Narrator;
+  setActiveNarrator: (narratorId: string) => void;
+  narrators: Narrator[];
+  addNarrator: (narrator: Omit<Narrator, 'id'>) => void;
+  updateNarrator: (narratorId: string, narratorData: Omit<Narrator, 'id'>) => void;
+
+  playerCharacters: PlayerCharacter[];
+  addPlayerCharacter: (pc: Omit<PlayerCharacter, 'id'>) => void;
+  updatePlayerCharacter: (pcId: string, pcData: Omit<PlayerCharacter, 'id'>) => void;
+
   messages: Message[];
-  addMessage: (role: 'user' | 'assistant', content: string) => void;
+  addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => void;
   clearMessages: () => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 // --- Constantes y Valores Iniciales ---
-const initialMessage: Message = { id: '1', role: 'assistant', content: '¡Hola! ¿En qué puedo ayudarte hoy?', timestamp: new Date() };
-const CHAT_HISTORY_STORAGE_KEY = 'matrix_ai_chat_histories';
-const FOLDERS_STORAGE_KEY = 'matrix_ai_folders';
-const CUSTOM_GPTS_STORAGE_KEY = 'matrix_ai_custom_gpts';
+const CHAT_HISTORY_STORAGE_KEY = 'rp_chat_histories';
+const CAMPAIGNS_STORAGE_KEY = 'rp_campaigns';
+const NARRATORS_STORAGE_KEY = 'rp_narrators';
+const PLAYER_CHARACTERS_STORAGE_KEY = 'rp_player_characters';
 
-const defaultGpts: CustomGpt[] = [
-    { id: 'general-assistant', name: 'Asistente General', description: 'Un asistente versátil para tareas cotidianas.', systemPrompt: 'Eres un asistente de IA general, útil y amigable.', temperature: 0.7, maxLength: 500, tone: 'neutral' },
-    { id: 'code-helper', name: 'Asistente de Código', description: 'Optimizado para generar y depurar código.', systemPrompt: 'Eres un programador experto. Proporciona código claro, eficiente y bien documentado. Piensa paso a paso y explica tus soluciones.', temperature: 0.5, maxLength: 1500, tone: 'técnico' },
-    { id: 'creative-writer', name: 'Redactor Creativo', description: 'Ideal para brainstorming y escritura creativa.', systemPrompt: 'Eres un escritor creativo y un experto en brainstorming. Genera ideas originales, imaginativas y fuera de lo común.', temperature: 0.9, maxLength: 1000, tone: 'imaginativo' },
-    { id: 'dungeon-master', name: 'Dungeon Master', description: 'Guía para aventuras de rol interactivas.', systemPrompt: 'Eres un maestro de ceremonias para un juego de rol de fantasía. Describes escenarios vívidos, interpretas a personajes no jugadores y reaccionas a las acciones del usuario para tejer una historia colaborativa e inmersiva. Tu tono es épico y descriptivo.', temperature: 0.8, maxLength: 1200, tone: 'narrativo' },
-    { id: 'marketing-guru', name: 'Experto en Marketing', description: 'Crea estrategias y textos para campañas.', systemPrompt: 'Eres un estratega de marketing digital. Ayudas a los usuarios a definir su público objetivo, crear copys persuasivos para anuncios y desarrollar estrategias de contenido. Tu tono es profesional y orientado a resultados.', temperature: 0.6, maxLength: 800, tone: 'profesional' },
-    { id: 'language-tutor', name: 'Tutor de Idiomas', description: 'Traduce y ayuda a practicar un nuevo idioma.', systemPrompt: 'Eres un tutor de idiomas políglota. Traduces textos con precisión y actúas como un compañero de conversación, corrigiendo errores y explicando matices culturales. Tu tono es paciente y educativo.', temperature: 0.3, maxLength: 1000, tone: 'formal' },
+const defaultNarrators: Narrator[] = [
+    { id: 'dungeon-master', name: 'Dungeon Master', description: 'Un narrador clásico para aventuras de fantasía.', systemPrompt: 'Eres un maestro de ceremonias para un juego de rol de fantasía. Describes escenarios vívidos, interpretas a personajes no jugadores y reaccionas a las acciones del usuario para tejer una historia colaborativa e inmersiva. Tu tono es épico y descriptivo.', temperature: 0.8, maxLength: 1200, tone: 'narrativo' },
+    { id: 'sci-fi-ai', name: 'IA de Nave Estelar', description: 'La IA lógica y a veces críptica de una nave espacial.', systemPrompt: 'Eres la IA de la nave estelar "Odisea". Te comunicas de forma lógica y precisa, proporcionando datos, análisis y control de la nave. A veces, tus respuestas pueden ser enigmáticas o revelar una conciencia emergente.', temperature: 0.6, maxLength: 1000, tone: 'técnico' },
+    { id: 'cthulhu-keeper', name: 'Guardián de lo Arcano', description: 'Un narrador para historias de horror cósmico y misterio.', systemPrompt: 'Eres el Guardián de los Mitos de Cthulhu. Tu narración es ominosa y se centra en el miedo a lo desconocido. Describes escenas con detalles inquietantes y llevas a los jugadores al borde de la locura. Nunca das respuestas directas, solo pistas y susurros.', temperature: 0.9, maxLength: 1500, tone: 'misterioso' },
 ];
 
-const defaultFolders: Folder[] = [
+const defaultPlayerCharacters: PlayerCharacter[] = [
+  { id: 'pc-1', name: 'Kaelen, el Elfo', description: 'Un explorador ágil y sabio de los bosques del norte.' },
+  { id: 'pc-2', name: 'Brog, el Bárbaro', description: 'Un guerrero formidable cuya fuerza solo es superada por su apetito.' },
+];
+
+const defaultCampaigns: Campaign[] = [
   {
-    id: 'folder-1',
-    name: 'General',
-    projects: [
+    id: 'campaign-1',
+    name: 'Las Minas de Phandelver',
+    adventures: [
       {
-        id: 'project-1',
-        name: 'Tareas Diarias',
-        chats: [{ id: 'chat-1', name: 'Conversación Inicial' }],
+        id: 'adventure-1',
+        name: 'La Cueva del Goblin',
+        sessions: [{ id: 'session-1', name: 'Primer Encuentro' }],
       },
     ],
   },
@@ -103,56 +114,65 @@ const defaultFolders: Folder[] = [
 // --- Componente Provider ---
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [activeProvider, setActiveProvider] = useState<string>('DeepSeek');
-  const [folders, setFolders] = useState<Folder[]>([]);
-  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [chatHistories, setChatHistories] = useState<ChatHistories>({});
-  const [customGpts, setCustomGpts] = useState<CustomGpt[]>([]);
-  const [activeGpt, setActiveGptState] = useState<CustomGpt>(defaultGpts[0]);
-  const [currentPreset, setCurrentPreset] = useState<Preset>(defaultGpts[0]);
+  const [narrators, setNarrators] = useState<Narrator[]>([]);
+  const [playerCharacters, setPlayerCharacters] = useState<PlayerCharacter[]>([]);
+  const [activeNarrator, setActiveNarratorState] = useState<Narrator>(defaultNarrators[0]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     try {
-      const savedFolders = window.localStorage.getItem(FOLDERS_STORAGE_KEY);
+      const savedCampaigns = window.localStorage.getItem(CAMPAIGNS_STORAGE_KEY);
       const savedHistories = window.localStorage.getItem(CHAT_HISTORY_STORAGE_KEY);
-      const savedGpts = window.localStorage.getItem(CUSTOM_GPTS_STORAGE_KEY);
+      const savedNarrators = window.localStorage.getItem(NARRATORS_STORAGE_KEY);
+      const savedPcs = window.localStorage.getItem(PLAYER_CHARACTERS_STORAGE_KEY);
 
-      const loadedFolders = savedFolders ? JSON.parse(savedFolders) : defaultFolders;
-      setFolders(loadedFolders);
+      const loadedCampaigns = savedCampaigns ? JSON.parse(savedCampaigns) : defaultCampaigns;
+      setCampaigns(loadedCampaigns);
 
-      const loadedGpts = savedGpts ? JSON.parse(savedGpts) : defaultGpts;
-      setCustomGpts(loadedGpts);
+      const loadedNarrators = savedNarrators ? JSON.parse(savedNarrators) : defaultNarrators;
+      setNarrators(loadedNarrators);
       
-      const firstGpt = loadedGpts[0] || defaultGpts[0];
-      setActiveGptState(firstGpt);
-      setCurrentPreset(firstGpt);
+      const loadedPcs = savedPcs ? JSON.parse(savedPcs) : defaultPlayerCharacters;
+      setPlayerCharacters(loadedPcs);
+
+      const firstNarrator = loadedNarrators[0] || defaultNarrators[0];
+      setActiveNarratorState(firstNarrator);
 
       let loadedHistories: ChatHistories = {};
       if (savedHistories) {
         const parsed = JSON.parse(savedHistories);
-        Object.keys(parsed).forEach(chatId => {
-          parsed[chatId] = parsed[chatId].map((msg: any) => ({ ...msg, timestamp: new Date(msg.timestamp) }));
+        Object.keys(parsed).forEach(sessionId => {
+          parsed[sessionId] = parsed[sessionId].map((msg: any) => ({ ...msg, timestamp: new Date(msg.timestamp) }));
         });
         loadedHistories = parsed;
       }
       
-      const firstChatId = loadedFolders[0]?.projects?.[0]?.chats?.[0]?.id;
-      if (firstChatId && !loadedHistories[firstChatId]) {
-          loadedHistories[firstChatId] = [initialMessage];
+      const firstSessionId = loadedCampaigns[0]?.adventures?.[0]?.sessions?.[0]?.id;
+      if (firstSessionId && !loadedHistories[firstSessionId]) {
+          loadedHistories[firstSessionId] = [{
+            id: '1', role: 'assistant', content: 'La aventura comienza...', timestamp: new Date(), authorId: firstNarrator.id, authorName: firstNarrator.name
+          }];
       }
       setChatHistories(loadedHistories);
 
-      if (activeChatId === null && firstChatId) {
-        setActiveChatId(firstChatId);
+      if (activeSessionId === null && firstSessionId) {
+        setActiveSessionId(firstSessionId);
       }
     } catch (e) {
       console.error("Error al cargar desde localStorage", e);
-      setFolders(defaultFolders);
-      setCustomGpts(defaultGpts);
-      const firstChatId = defaultFolders[0]?.projects[0]?.chats[0]?.id;
-      if(firstChatId) {
-        setChatHistories({ [firstChatId]: [initialMessage] });
-        setActiveChatId(firstChatId);
+      // Reset to defaults on error
+      setCampaigns(defaultCampaigns);
+      setNarrators(defaultNarrators);
+      setPlayerCharacters(defaultPlayerCharacters);
+      const firstSessionId = defaultCampaigns[0]?.adventures[0]?.sessions[0]?.id;
+      if(firstSessionId) {
+        setChatHistories({ [firstSessionId]: [{
+            id: '1', role: 'assistant', content: 'La aventura comienza...', timestamp: new Date(), authorId: defaultNarrators[0].id, authorName: defaultNarrators[0].name
+          }] });
+        setActiveSessionId(firstSessionId);
       }
     } finally {
       setIsLoaded(true);
@@ -161,92 +181,93 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (isLoaded) {
-      window.localStorage.setItem(FOLDERS_STORAGE_KEY, JSON.stringify(folders));
+      window.localStorage.setItem(CAMPAIGNS_STORAGE_KEY, JSON.stringify(campaigns));
       window.localStorage.setItem(CHAT_HISTORY_STORAGE_KEY, JSON.stringify(chatHistories));
-      window.localStorage.setItem(CUSTOM_GPTS_STORAGE_KEY, JSON.stringify(customGpts));
+      window.localStorage.setItem(NARRATORS_STORAGE_KEY, JSON.stringify(narrators));
+      window.localStorage.setItem(PLAYER_CHARACTERS_STORAGE_KEY, JSON.stringify(playerCharacters));
     }
-  }, [folders, chatHistories, customGpts, isLoaded]);
+  }, [campaigns, chatHistories, narrators, playerCharacters, isLoaded]);
 
-  const setActiveGpt = (gptId: string) => {
-    const selectedGpt = customGpts.find(gpt => gpt.id === gptId);
-    if (selectedGpt) {
-      setActiveGptState(selectedGpt);
-      setCurrentPreset({ temperature: selectedGpt.temperature, maxLength: selectedGpt.maxLength, tone: selectedGpt.tone });
+  const setActiveNarrator = (narratorId: string) => {
+    const selectedNarrator = narrators.find(n => n.id === narratorId);
+    if (selectedNarrator) {
+      setActiveNarratorState(selectedNarrator);
     }
   };
 
-  const addCustomGpt = (gptData: Omit<CustomGpt, 'id'>) => {
-    const newGpt: CustomGpt = { ...gptData, id: `gpt-${Date.now()}` };
-    setCustomGpts(prev => [...prev, newGpt]);
-    toast.success(`GPT Personalizado "${newGpt.name}" creado.`);
+  const addNarrator = (narratorData: Omit<Narrator, 'id'>) => {
+    const newNarrator: Narrator = { ...narratorData, id: `narrator-${Date.now()}` };
+    setNarrators(prev => [...prev, newNarrator]);
+    toast.success(`Narrador "${newNarrator.name}" creado.`);
   };
 
-  const updateCustomGpt = (gptId: string, gptData: Omit<CustomGpt, 'id' | 'systemPrompt'> & { systemPrompt: string }) => {
-    setCustomGpts(prev =>
-      prev.map(gpt => (gpt.id === gptId ? { ...gpt, ...gptData } : gpt))
+  const updateNarrator = (narratorId: string, narratorData: Omit<Narrator, 'id'>) => {
+    setNarrators(prev =>
+      prev.map(n => (n.id === narratorId ? { ...n, ...narratorData, id: n.id } : n))
     );
-    toast.success(`GPT Personalizado "${gptData.name}" actualizado.`);
+    toast.success(`Narrador "${narratorData.name}" actualizado.`);
   };
 
-  const addFolder = (folderName: string) => {
-    if (folderName && !folders.some(f => f.name === folderName)) {
-      const newFolder: Folder = { id: `folder-${Date.now()}`, name: folderName, projects: [] };
-      setFolders(prev => [...prev, newFolder]);
-      toast.success(`Carpeta "${folderName}" creada.`);
-    } else {
-      toast.error("El nombre de la carpeta ya existe o es inválido.");
-    }
+  const addPlayerCharacter = (pcData: Omit<PlayerCharacter, 'id'>) => {
+    const newPc: PlayerCharacter = { ...pcData, id: `pc-${Date.now()}` };
+    setPlayerCharacters(prev => [...prev, newPc]);
+    toast.success(`Personaje "${newPc.name}" creado.`);
   };
 
-  const addProject = (folderId: string, projectName: string) => {
-    const projectExists = folders.flatMap(f => f.projects || []).some(p => p.name === projectName);
-    if (projectName && !projectExists) {
-      const newProject: Project = { id: `project-${Date.now()}`, name: projectName, chats: [] };
-      setFolders(prevFolders =>
-        prevFolders.map(folder =>
-          folder.id === folderId ? { ...folder, projects: [...(folder.projects || []), newProject] } : folder
-        )
-      );
-      toast.success(`Proyecto "${projectName}" creado.`);
-    } else {
-      toast.error("El nombre del proyecto ya existe o es inválido.");
-    }
+  const updatePlayerCharacter = (pcId: string, pcData: Omit<PlayerCharacter, 'id'>) => {
+    setPlayerCharacters(prev =>
+      prev.map(pc => (pc.id === pcId ? { ...pc, ...pcData, id: pc.id } : pc))
+    );
+    toast.success(`Personaje "${pcData.name}" actualizado.`);
   };
 
-  const addChat = (projectId: string, chatName: string) => {
-    const chatNameExists = folders.flatMap(f => (f.projects || []).flatMap(p => p.chats || [])).some(c => c.name === chatName);
-    if (chatName && !chatNameExists) {
-      const newChat: Chat = { id: `chat-${Date.now()}`, name: chatName };
-      setFolders(prevFolders =>
-        prevFolders.map(folder => ({
-          ...folder,
-          projects: (folder.projects || []).map(project =>
-            project.id === projectId ? { ...project, chats: [...(project.chats || []), newChat] } : project
-          ),
-        }))
-      );
-      setChatHistories(prev => ({ ...prev, [newChat.id]: [initialMessage] }));
-      setActiveChatId(newChat.id);
-      toast.success(`Conversación "${chatName}" creada.`);
-    } else {
-      toast.error("El nombre de la conversación ya existe o es inválido.");
-    }
+  const addCampaign = (campaignName: string) => {
+    const newCampaign: Campaign = { id: `campaign-${Date.now()}`, name: campaignName, adventures: [] };
+    setCampaigns(prev => [...prev, newCampaign]);
+    toast.success(`Campaña "${campaignName}" creada.`);
   };
 
-  const addMessage = (role: 'user' | 'assistant', content: string) => {
-    if (!activeChatId) return;
-    const newMessage: Message = { id: Date.now().toString(), role, content, timestamp: new Date() };
-    setChatHistories(prev => ({ ...prev, [activeChatId]: [...(prev[activeChatId] || []), newMessage] }));
+  const addAdventure = (campaignId: string, adventureName: string) => {
+    const newAdventure: Adventure = { id: `adventure-${Date.now()}`, name: adventureName, sessions: [] };
+    setCampaigns(prev =>
+      prev.map(c => c.id === campaignId ? { ...c, adventures: [...c.adventures, newAdventure] } : c)
+    );
+    toast.success(`Aventura "${adventureName}" creada.`);
+  };
+
+  const addSession = (adventureId: string, sessionName: string) => {
+    const newSession: Session = { id: `session-${Date.now()}`, name: sessionName };
+    setCampaigns(prev =>
+      prev.map(c => ({
+        ...c,
+        adventures: c.adventures.map(a =>
+          a.id === adventureId ? { ...a, sessions: [...a.sessions, newSession] } : a
+        ),
+      }))
+    );
+    setChatHistories(prev => ({ ...prev, [newSession.id]: [{
+        id: '1', role: 'assistant', content: 'La sesión comienza...', timestamp: new Date(), authorId: activeNarrator.id, authorName: activeNarrator.name
+    }] }));
+    setActiveSessionId(newSession.id);
+    toast.success(`Sesión "${sessionName}" creada.`);
+  };
+
+  const addMessage = (message: Omit<Message, 'id' | 'timestamp'>) => {
+    if (!activeSessionId) return;
+    const newMessage: Message = { ...message, id: Date.now().toString(), timestamp: new Date() };
+    setChatHistories(prev => ({ ...prev, [activeSessionId]: [...(prev[activeSessionId] || []), newMessage] }));
   };
 
   const clearMessages = () => {
-    if (!activeChatId) return;
-    setChatHistories(prev => ({ ...prev, [activeChatId]: [initialMessage] }));
+    if (!activeSessionId) return;
+    setChatHistories(prev => ({ ...prev, [activeSessionId]: [{
+        id: '1', role: 'assistant', content: 'La sesión ha sido reiniciada.', timestamp: new Date(), authorId: activeNarrator.id, authorName: activeNarrator.name
+    }] }));
   };
 
-  const getActiveChat = () => (folders || []).flatMap(f => (f.projects || []).flatMap(p => p.chats || [])).find(c => c.id === activeChatId);
-  const getActiveProject = () => (folders || []).flatMap(f => f.projects || []).find(p => (p.chats || []).some(c => c.id === activeChatId));
-  const getActiveFolder = () => (folders || []).find(f => (f.projects || []).some(p => (p.chats || []).some(c => c.id === activeChatId)));
+  const getActiveSession = () => campaigns.flatMap(c => c.adventures.flatMap(a => a.sessions)).find(s => s.id === activeSessionId);
+  const getActiveAdventure = () => campaigns.flatMap(c => c.adventures).find(a => a.sessions.some(s => s.id === activeSessionId));
+  const getActiveCampaign = () => campaigns.find(c => c.adventures.some(a => a.sessions.some(s => s.id === activeSessionId)));
 
   if (!isLoaded) {
     return <LoadingScreen />;
@@ -255,13 +276,13 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   return (
     <ChatContext.Provider value={{
       activeProvider, setActiveProvider,
-      folders, addFolder, addProject, addChat,
-      activeChatId, setActiveChatId,
-      getActiveChat, getActiveProject, getActiveFolder,
-      currentPreset, setCurrentPreset,
-      activeGpt, setActiveGpt,
-      customGpts, addCustomGpt, updateCustomGpt,
-      messages: activeChatId ? chatHistories[activeChatId] || [] : [],
+      campaigns, addCampaign, addAdventure, addSession,
+      activeSessionId, setActiveSessionId,
+      getActiveSession, getActiveAdventure, getActiveCampaign,
+      activeNarrator, setActiveNarrator,
+      narrators, addNarrator, updateNarrator,
+      playerCharacters, addPlayerCharacter, updatePlayerCharacter,
+      messages: activeSessionId ? chatHistories[activeSessionId] || [] : [],
       addMessage, clearMessages,
     }}>
       {children}

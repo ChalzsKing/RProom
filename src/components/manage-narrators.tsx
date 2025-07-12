@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useChat, CustomGpt } from '@/context/chat-context';
+import { useChat, Narrator } from '@/context/chat-context';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -36,61 +36,59 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-const gptSchema = z.object({
+const narratorSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
   description: z.string().min(10, 'La descripción debe tener al menos 10 caracteres.'),
-  systemPrompt: z.string().min(20, 'El prompt del sistema debe tener al menos 20 caracteres.'),
+  systemPrompt: z.string().min(20, 'La instrucción del sistema debe tener al menos 20 caracteres.'),
   temperature: z.number().min(0).max(1),
   maxLength: z.number().min(50).max(4000),
   tone: z.string().min(2, 'El tono debe tener al menos 2 caracteres.'),
 });
 
-type GptFormValues = z.infer<typeof gptSchema>;
+type NarratorFormValues = z.infer<typeof narratorSchema>;
 
-const tones = ['neutral', 'amistoso', 'formal', 'técnico', 'creativo', 'profesional', 'imaginativo', 'experto (sin filtros)'];
+const tones = ['neutral', 'amistoso', 'formal', 'técnico', 'creativo', 'profesional', 'imaginativo', 'experto (sin filtros)', 'narrativo', 'misterioso'];
 
-interface ManageGptsProps {
-  gpt?: CustomGpt;
+interface ManageNarratorsProps {
+  narrator?: Narrator;
   children: React.ReactNode;
 }
 
-export function ManageGpts({ gpt, children }: ManageGptsProps) {
-  const { addCustomGpt, updateCustomGpt } = useChat();
+export function ManageNarrators({ narrator, children }: ManageNarratorsProps) {
+  const { addNarrator, updateNarrator } = useChat();
   const [open, setOpen] = useState(false);
-  const isEditMode = !!gpt;
+  const isEditMode = !!narrator;
 
-  const form = useForm<GptFormValues>({
-    resolver: zodResolver(gptSchema),
-    defaultValues: gpt || {
+  const form = useForm<NarratorFormValues>({
+    resolver: zodResolver(narratorSchema),
+    defaultValues: narrator || {
       name: '',
       description: '',
       systemPrompt: '',
       temperature: 0.7,
-      maxLength: 500,
-      tone: 'neutral',
+      maxLength: 1000,
+      tone: 'narrativo',
     },
   });
 
   useEffect(() => {
-    if (gpt) {
-      form.reset(gpt);
-    } else {
-      form.reset({
+    if (open) {
+      form.reset(narrator || {
         name: '',
         description: '',
         systemPrompt: '',
         temperature: 0.7,
-        maxLength: 500,
-        tone: 'neutral',
+        maxLength: 1000,
+        tone: 'narrativo',
       });
     }
-  }, [gpt, form, open]);
+  }, [narrator, form, open]);
 
-  function onSubmit(values: GptFormValues) {
-    if (isEditMode && gpt) {
-      updateCustomGpt(gpt.id, values);
+  function onSubmit(values: NarratorFormValues) {
+    if (isEditMode && narrator) {
+      updateNarrator(narrator.id, values);
     } else {
-      addCustomGpt(values);
+      addNarrator(values);
     }
     setOpen(false);
   }
@@ -100,9 +98,9 @@ export function ManageGpts({ gpt, children }: ManageGptsProps) {
       <SheetTrigger asChild>{children}</SheetTrigger>
       <SheetContent className="w-[400px] sm:w-[540px] bg-background text-foreground border-l border-border">
         <SheetHeader>
-          <SheetTitle>{isEditMode ? 'Editar' : 'Crear'} GPT Personalizado</SheetTitle>
+          <SheetTitle>{isEditMode ? 'Editar' : 'Crear'} Narrador (IA)</SheetTitle>
           <SheetDescription>
-            {isEditMode ? 'Modifica los detalles de tu asistente de IA.' : 'Define el comportamiento, conocimiento y estilo de tu propio asistente de IA.'}
+            {isEditMode ? 'Modifica la personalidad de tu narrador de IA.' : 'Define el comportamiento, conocimiento y estilo de tu propio narrador de IA.'}
           </SheetDescription>
         </SheetHeader>
         <Form {...form}>
@@ -112,9 +110,9 @@ export function ManageGpts({ gpt, children }: ManageGptsProps) {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nombre</FormLabel>
+                  <FormLabel>Nombre del Narrador</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ej: Experto en Marketing" {...field} />
+                    <Input placeholder="Ej: Dungeon Master Clásico" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -138,10 +136,10 @@ export function ManageGpts({ gpt, children }: ManageGptsProps) {
               name="systemPrompt"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Prompt del Sistema</FormLabel>
+                  <FormLabel>Instrucción del Sistema (Personalidad)</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Eres un asistente experto en..."
+                      placeholder="Eres un maestro de ceremonias para un juego de rol..."
                       className="resize-y min-h-[100px]"
                       {...field}
                     />
@@ -158,7 +156,7 @@ export function ManageGpts({ gpt, children }: ManageGptsProps) {
               name="temperature"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Temperatura: {field.value}</FormLabel>
+                  <FormLabel>Creatividad (Temperatura): {field.value}</FormLabel>
                   <FormControl>
                     <Slider
                       min={0}
@@ -176,7 +174,7 @@ export function ManageGpts({ gpt, children }: ManageGptsProps) {
               name="maxLength"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Longitud Máxima</FormLabel>
+                  <FormLabel>Longitud Máxima de Respuesta</FormLabel>
                   <FormControl>
                     <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10))} />
                   </FormControl>
@@ -212,7 +210,7 @@ export function ManageGpts({ gpt, children }: ManageGptsProps) {
                 <SheetClose asChild>
                     <Button type="button" variant="ghost">Cancelar</Button>
                 </SheetClose>
-              <Button type="submit">{isEditMode ? 'Guardar Cambios' : 'Crear GPT'}</Button>
+              <Button type="submit">{isEditMode ? 'Guardar Cambios' : 'Crear Narrador'}</Button>
             </SheetFooter>
           </form>
         </Form>

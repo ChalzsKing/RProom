@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Folder, Briefcase, MessageSquare, PlusCircle, Plus, Brain, Sparkles, Pencil, RotateCcw } from 'lucide-react';
+import { Folder, Briefcase, MessageSquare, PlusCircle, Plus, Brain, Sparkles, Pencil, RotateCcw, User, Users } from 'lucide-react';
 import { useChat } from '@/context/chat-context';
 import { cn } from '@/lib/utils';
 import {
@@ -11,38 +11,40 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ManageGpts } from './manage-gpts';
+import { ManageNarrators } from './manage-narrators';
+import { ManagePcs } from './manage-pcs';
 
 export function SidebarNav() {
   const {
     activeProvider, setActiveProvider,
-    folders, addFolder, addProject, addChat,
-    activeChatId, setActiveChatId, getActiveProject,
-    customGpts, activeGpt, setActiveGpt
+    campaigns, addCampaign, addAdventure, addSession,
+    activeSessionId, setActiveSessionId, getActiveAdventure,
+    narrators, activeNarrator, setActiveNarrator,
+    playerCharacters
   } = useChat();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
-  const [dialogMode, setDialogMode] = useState<'folder' | 'project' | 'chat'>('folder');
-  const [dialogContext, setDialogContext] = useState<string>(''); // folderId or projectId
+  const [dialogMode, setDialogMode] = useState<'campaign' | 'adventure' | 'session'>('campaign');
+  const [dialogContext, setDialogContext] = useState<string>(''); // campaignId or adventureId
   const [newName, setNewName] = useState("");
   
-  const [openFolders, setOpenFolders] = useState<string[]>([]);
-  const [openProjects, setOpenProjects] = useState<string[]>([]);
+  const [openCampaigns, setOpenCampaigns] = useState<string[]>([]);
+  const [openAdventures, setOpenAdventures] = useState<string[]>([]);
 
   const providers = ['DeepSeek', 'Gemini'];
 
   useEffect(() => {
-    if (folders) {
-      setOpenFolders(folders.map(f => f.id));
-      const activeProject = getActiveProject();
-      if (activeProject) {
-        setOpenProjects(prev => [...new Set([...prev, activeProject.id])]);
+    if (campaigns) {
+      setOpenCampaigns(campaigns.map(c => c.id));
+      const activeAdventure = getActiveAdventure();
+      if (activeAdventure) {
+        setOpenAdventures(prev => [...new Set([...prev, activeAdventure.id])]);
       }
     }
-  }, [folders, activeChatId, getActiveProject]);
+  }, [campaigns, activeSessionId, getActiveAdventure]);
 
-  const openDialog = (mode: 'folder' | 'project' | 'chat', context = '') => {
+  const openDialog = (mode: 'campaign' | 'adventure' | 'session', context = '') => {
     setDialogMode(mode);
     setDialogContext(context);
     setNewName("");
@@ -51,97 +53,87 @@ export function SidebarNav() {
 
   const handleCreate = () => {
     if (newName.trim()) {
-      if (dialogMode === 'folder') addFolder(newName.trim());
-      else if (dialogMode === 'project') addProject(dialogContext, newName.trim());
-      else if (dialogMode === 'chat') addChat(dialogContext, newName.trim());
+      if (dialogMode === 'campaign') addCampaign(newName.trim());
+      else if (dialogMode === 'adventure') addAdventure(dialogContext, newName.trim());
+      else if (dialogMode === 'session') addSession(dialogContext, newName.trim());
       setDialogOpen(false);
     }
   };
 
   const handleResetApp = () => {
-    localStorage.removeItem('matrix_ai_chat_histories');
-    localStorage.removeItem('matrix_ai_folders');
-    localStorage.removeItem('matrix_ai_custom_gpts');
+    localStorage.clear();
     window.location.reload();
   };
 
   const getDialogTitle = () => {
-    if (dialogMode === 'folder') return 'Crear Nueva Carpeta';
-    if (dialogMode === 'project') return 'Crear Nuevo Proyecto';
-    return 'Crear Nueva Conversación';
+    if (dialogMode === 'campaign') return 'Crear Nueva Campaña';
+    if (dialogMode === 'adventure') return 'Crear Nueva Aventura';
+    return 'Crear Nueva Sesión';
   };
 
   return (
     <>
-      <div className="flex h-full max-h-screen flex-col gap-2 bg-background p-4 text-foreground border-r border-border">
+      <div className="hidden lg:flex h-full max-h-screen flex-col gap-2 bg-background p-4 text-foreground border-r border-border">
         <div className="flex h-14 items-center border-b border-border px-4 lg:h-[60px] lg:px-6">
-          <h1 className="text-xl font-semibold text-foreground">Matrix AI</h1>
+          <h1 className="text-xl font-semibold text-foreground">Matrix RP</h1>
         </div>
         <div className="flex-1 overflow-auto py-2">
           <nav className="grid items-start gap-2 text-sm font-medium">
             <div className="flex items-center justify-between px-3 py-2">
-              <span className="text-xs font-semibold text-muted-foreground">Carpetas</span>
-              <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary" onClick={() => openDialog('folder')}>
+              <span className="text-xs font-semibold text-muted-foreground">Campañas</span>
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary" onClick={() => openDialog('campaign')}>
                 <PlusCircle className="h-4 w-4" />
-                <span className="sr-only">Nueva Carpeta</span>
+                <span className="sr-only">Nueva Campaña</span>
               </Button>
             </div>
 
-            <Accordion type="multiple" className="w-full" value={openFolders} onValueChange={setOpenFolders}>
-              {(folders || []).map((folder) => (
-                <AccordionItem key={folder.id} value={folder.id} className="border-b-0">
+            <Accordion type="multiple" className="w-full" value={openCampaigns} onValueChange={setOpenCampaigns}>
+              {(campaigns || []).map((campaign) => (
+                <AccordionItem key={campaign.id} value={campaign.id} className="border-b-0">
                   <div className="flex items-center w-full rounded-md hover:bg-accent/50 group">
                     <AccordionTrigger className="flex-1 px-3 py-2 text-left hover:no-underline">
                       <div className="flex items-center gap-3">
                         <Folder className="h-4 w-4" />
-                        <span>{folder.name}</span>
+                        <span>{campaign.name}</span>
                       </div>
                     </AccordionTrigger>
                     <Button
                       variant="ghost"
                       size="icon"
                       className="h-6 w-6 mr-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        openDialog('project', folder.id);
-                      }}
+                      onClick={(e) => { e.stopPropagation(); openDialog('adventure', campaign.id); }}
                     >
                       <Plus className="h-4 w-4" />
-                      <span className="sr-only">Nuevo Proyecto</span>
+                      <span className="sr-only">Nueva Aventura</span>
                     </Button>
                   </div>
                   <AccordionContent className="pl-4 pt-1">
-                    <Accordion type="multiple" className="w-full" value={openProjects} onValueChange={setOpenProjects}>
-                      {(folder.projects || []).map((project) => (
-                        <AccordionItem key={project.id} value={project.id} className="border-b-0">
+                    <Accordion type="multiple" className="w-full" value={openAdventures} onValueChange={setOpenAdventures}>
+                      {(campaign.adventures || []).map((adventure) => (
+                        <AccordionItem key={adventure.id} value={adventure.id} className="border-b-0">
                           <div className="flex items-center w-full rounded-md hover:bg-accent/50 group">
                             <AccordionTrigger className="flex-1 px-3 py-2 text-left hover:no-underline">
                               <div className="flex items-center gap-3">
                                 <Briefcase className="h-4 w-4" />
-                                <span>{project.name}</span>
+                                <span>{adventure.name}</span>
                               </div>
                             </AccordionTrigger>
                             <Button
                               variant="ghost"
                               size="icon"
                               className="h-6 w-6 mr-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                openDialog('chat', project.id);
-                              }}
+                              onClick={(e) => { e.stopPropagation(); openDialog('session', adventure.id); }}
                             >
                               <Plus className="h-4 w-4" />
-                              <span className="sr-only">Nueva Conversación</span>
+                              <span className="sr-only">Nueva Sesión</span>
                             </Button>
                           </div>
                           <AccordionContent className="pl-4 pt-1">
-                            {(project.chats || []).map((chat) => (
-                              <a key={chat.id} href="#" onClick={(e) => { e.preventDefault(); setActiveChatId(chat.id); }}
+                            {(adventure.sessions || []).map((session) => (
+                              <a key={session.id} href="#" onClick={(e) => { e.preventDefault(); setActiveSessionId(session.id); }}
                                 className={cn("flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary",
-                                  activeChatId === chat.id ? "bg-accent text-accent-foreground" : "text-foreground")}>
-                                <MessageSquare className="h-4 w-4" />{chat.name}
+                                  activeSessionId === session.id ? "bg-accent text-accent-foreground" : "text-foreground")}>
+                                <MessageSquare className="h-4 w-4" />{session.name}
                               </a>
                             ))}
                           </AccordionContent>
@@ -154,28 +146,52 @@ export function SidebarNav() {
             </Accordion>
 
             <div className="mt-4 flex items-center justify-between px-3 py-2">
-              <span className="text-xs font-semibold text-muted-foreground">GPTs Personalizados</span>
-              <ManageGpts>
+              <span className="text-xs font-semibold text-muted-foreground">Personajes (PJs)</span>
+              <ManagePcs>
                 <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary">
                   <PlusCircle className="h-4 w-4" />
-                  <span className="sr-only">Crear GPT Personalizado</span>
+                  <span className="sr-only">Crear Personaje</span>
                 </Button>
-              </ManageGpts>
+              </ManagePcs>
             </div>
-            {customGpts.map((gpt) => (
-              <div key={gpt.id} className="flex items-center justify-between rounded-lg hover:bg-accent/50 group">
-                <a href="#" onClick={(e) => { e.preventDefault(); setActiveGpt(gpt.id); }}
-                  className={cn("flex-1 flex items-center gap-3 rounded-lg px-3 py-2 transition-all",
-                    activeGpt.id === gpt.id ? "bg-accent text-accent-foreground" : "text-foreground group-hover:text-primary")}>
-                  <Sparkles className="h-4 w-4" />
-                  <span className="truncate flex-1">{gpt.name}</span>
-                </a>
-                <ManageGpts gpt={gpt}>
+            {playerCharacters.map((pc) => (
+              <div key={pc.id} className="flex items-center justify-between rounded-lg hover:bg-accent/50 group">
+                <div className="flex-1 flex items-center gap-3 rounded-lg px-3 py-2 text-foreground">
+                  <User className="h-4 w-4" />
+                  <span className="truncate flex-1">{pc.name}</span>
+                </div>
+                <ManagePcs pc={pc}>
                   <Button variant="ghost" size="icon" className="h-8 w-8 mr-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Pencil className="h-4 w-4" />
-                    <span className="sr-only">Editar GPT</span>
+                    <span className="sr-only">Editar Personaje</span>
                   </Button>
-                </ManageGpts>
+                </ManagePcs>
+              </div>
+            ))}
+
+            <div className="mt-4 flex items-center justify-between px-3 py-2">
+              <span className="text-xs font-semibold text-muted-foreground">Narradores (IA)</span>
+              <ManageNarrators>
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary">
+                  <PlusCircle className="h-4 w-4" />
+                  <span className="sr-only">Crear Narrador</span>
+                </Button>
+              </ManageNarrators>
+            </div>
+            {narrators.map((narrator) => (
+              <div key={narrator.id} className="flex items-center justify-between rounded-lg hover:bg-accent/50 group">
+                <a href="#" onClick={(e) => { e.preventDefault(); setActiveNarrator(narrator.id); }}
+                  className={cn("flex-1 flex items-center gap-3 rounded-lg px-3 py-2 transition-all",
+                    activeNarrator.id === narrator.id ? "bg-accent text-accent-foreground" : "text-foreground group-hover:text-primary")}>
+                  <Sparkles className="h-4 w-4" />
+                  <span className="truncate flex-1">{narrator.name}</span>
+                </a>
+                <ManageNarrators narrator={narrator}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 mr-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Pencil className="h-4 w-4" />
+                    <span className="sr-only">Editar Narrador</span>
+                  </Button>
+                </ManageNarrators>
               </div>
             ))}
 
@@ -217,7 +233,7 @@ export function SidebarNav() {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-foreground">¿Estás seguro?</AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground">
-              Esta acción es irreversible. Se eliminarán todas tus carpetas, proyectos, conversaciones y GPTs personalizados. La aplicación volverá a su estado inicial.
+              Esta acción es irreversible. Se eliminarán todas tus campañas, aventuras, sesiones, personajes y narradores. La aplicación volverá a su estado inicial.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

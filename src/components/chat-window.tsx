@@ -3,10 +3,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Send, RefreshCw } from 'lucide-react';
+import { Send, RefreshCw, User } from 'lucide-react';
 import { useChat } from '@/context/chat-context';
 import { ModelParameters } from './model-parameters';
-import { CustomGptSelector } from './custom-gpt-selector';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -14,18 +13,22 @@ import { toast } from 'sonner';
 import { ThemeSwitcher } from './theme-switcher';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export function ChatWindow() {
   const {
-    activeProvider, getActiveChat, getActiveProject, getActiveFolder, currentPreset,
-    messages, addMessage, clearMessages, activeGpt
+    activeProvider, getActiveSession, getActiveAdventure, getActiveCampaign,
+    messages, addMessage, clearMessages, activeNarrator, playerCharacters
   } = useChat();
+  
   const [inputMessage, setInputMessage] = useState('');
   const [isThinking, setIsThinking] = useState(false);
+  const [activeSpeakerId, setActiveSpeakerId] = useState('dm'); // 'dm' for the Dungeon Master/Narrator
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const activeChat = getActiveChat();
-  const activeProject = getActiveProject();
-  const activeFolder = getActiveFolder();
+  
+  const activeSession = getActiveSession();
+  const activeAdventure = getActiveAdventure();
+  const activeCampaign = getActiveCampaign();
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -33,42 +36,76 @@ export function ChatWindow() {
     }
   }, [messages, isThinking]);
 
+  useEffect(() => {
+    // Reset speaker to DM if the list of characters changes
+    setActiveSpeakerId('dm');
+  }, [playerCharacters]);
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputMessage.trim()) {
-      const userMessageContent = inputMessage;
-      addMessage('user', userMessageContent);
-      setInputMessage('');
-      setIsThinking(true);
+    if (!inputMessage.trim() || isThinking) return;
 
-      try {
-        const response = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            provider: activeProvider,
-            messages: [...messages, { role: 'user', content: userMessageContent }],
-            temperature: currentPreset.temperature,
-            maxLength: currentPreset.maxLength,
-            tone: currentPreset.tone,
-            systemPrompt: activeGpt.systemPrompt,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Error al obtener respuesta de la IA');
-        }
-
-        const data = await response.json();
-        addMessage('assistant', data.message);
-      } catch (error: any) {
-        console.error('Error al enviar mensaje:', error);
-        toast.error(`Error: ${error.message}`);
-        addMessage('assistant', 'Lo siento, hubo un error al procesar tu solicitud. Por favor, inténtalo de nuevo.');
-      } finally {
-        setIsThinking(false);
+    const userMessageContent = inputMessage;
+    
+    let authorId = activeSpeakerId;
+    let authorName = 'Narrador';
+    if (activeSpeakerId !== 'dm') {
+      const pc = playerCharacters.find(p => p.id === activeSpeakerId);
+      if (pc) {
+        authorName = pc.name;
       }
+    }
+
+    addMessage({
+      role: 'user',
+      content: userMessageContent,
+      authorId,
+      authorName,
+    });
+
+    setInputMessage('');
+    setIsThinking(true);
+
+    try {
+      const apiMessages = messages.map(({ role, content }) => ({ role, content }));
+      apiMessages.push({ role: 'user', content: userMessageContent });
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: activeProvider,
+          messages: apiMessages,
+          temperature: activeNarrator.temperature,
+          maxLength: activeNarrator.maxLength,
+          tone: activeNarrator.tone,
+          systemPrompt: activeNarrator.systemPrompt,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al obtener respuesta de la IA');
+      }
+
+      const data = await response.json();
+      addMessage({
+        role: 'assistant',
+        content: data.message,
+        authorId: activeNarrator.id,
+        authorName: activeNarrator.name,
+      });
+    } catch (error: any) {
+      console.error('Error al enviar mensaje:', error);
+      toast.error(`Error: ${error.message}`);
+      addMessage({
+        role: 'assistant',
+        content: 'Lo siento, hubo un error al procesar tu solicitud. Por favor, inténtalo de nuevo.',
+        authorId: activeNarrator.id,
+        authorName: activeNarrator.name,
+      });
+    } finally {
+      setIsThinking(false);
     }
   };
 
@@ -76,12 +113,12 @@ export function ChatWindow() {
     clearMessages();
     setInputMessage('');
     setIsThinking(false);
-    toast.info('Chat reiniciado.');
+    toast.info('Sesión reiniciada.');
   };
 
-  const chatTitle = activeFolder && activeProject && activeChat
-    ? `${activeFolder.name} / ${activeProject.name} / ${activeChat.name}`
-    : 'Chat';
+  const chatTitle = activeCampaign && activeAdventure && activeSession
+    ? `${activeCampaign.name} / ${activeAdventure.name} / ${activeSession.name}`
+    : 'Sesión de Rol';
 
   return (
     <div className="flex flex-col h-full bg-background text-foreground">
@@ -90,15 +127,13 @@ export function ChatWindow() {
           {chatTitle}
         </h2>
         <div className="flex items-center gap-2">
-          <CustomGptSelector />
           <span className="text-xs text-muted-foreground hidden sm:inline">
-            Temp: {currentPreset.temperature} | Len: {currentPreset.maxLength} | Tono: {currentPreset.tone}
+            Narrador: {activeNarrator.name}
           </span>
-          <ModelParameters />
           <ThemeSwitcher />
           <Button variant="ghost" size="icon" className="text-foreground hover:text-primary" onClick={handleNewChat}>
             <RefreshCw className="h-5 w-5" />
-            <span className="sr-only">Reiniciar Chat</span>
+            <span className="sr-only">Reiniciar Sesión</span>
           </Button>
         </div>
       </header>
@@ -114,16 +149,12 @@ export function ChatWindow() {
             )}
           >
             <div className="font-bold mb-1">
-              {msg.role === 'user' ? 'Tú:' : 'IA:'}
+              {msg.authorName}:
             </div>
             <div className="markdown-content">
-              {msg.role === 'user' ? (
-                msg.content
-              ) : (
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {msg.content}
-                </ReactMarkdown>
-              )}
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {msg.content}
+              </ReactMarkdown>
             </div>
             <div className="text-xs opacity-70 mt-2 text-right">
               {format(msg.timestamp, 'HH:mm:ss', { locale: es })}
@@ -132,7 +163,7 @@ export function ChatWindow() {
         ))}
         {isThinking && (
           <div className="flex flex-col p-3 rounded-lg max-w-[80%] sm:max-w-[70%] bg-secondary text-secondary-foreground self-start rounded-bl-none animate-pulse">
-            <div className="font-bold mb-1">IA:</div>
+            <div className="font-bold mb-1">{activeNarrator.name}:</div>
             <div>...pensando</div>
             <div className="text-xs opacity-70 mt-2 text-right">
               {format(new Date(), 'HH:mm:ss', { locale: es })}
@@ -142,8 +173,29 @@ export function ChatWindow() {
       </main>
       <footer className="border-t border-border p-4 flex items-center gap-2 flex-shrink-0">
         <form onSubmit={handleSendMessage} className="flex w-full items-center gap-2">
+          <Select value={activeSpeakerId} onValueChange={setActiveSpeakerId}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Seleccionar personaje..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="dm">
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  <span>Narrador</span>
+                </div>
+              </SelectItem>
+              {playerCharacters.map(pc => (
+                <SelectItem key={pc.id} value={pc.id}>
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span>{pc.name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Input
-            placeholder="Escribe tu mensaje..."
+            placeholder="Escribe la acción o diálogo..."
             className="flex-1 bg-input text-foreground border-input focus-visible:ring-ring"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
