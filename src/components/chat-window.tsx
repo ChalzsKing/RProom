@@ -29,7 +29,7 @@ export function ChatWindow() {
 
   useEffect(() => {
     if (chatContainerRef.current) {
-      chatContainerRef.scrollTop = chatContainerRef.current.scrollHeight;
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [messages, isThinking]);
 
@@ -85,7 +85,7 @@ export function ChatWindow() {
 
   return (
     <div className="flex flex-col h-full bg-background text-foreground">
-      <header className="flex h-14 items-center justify-between border-b border-border px-4 lg:h-[60px] lg:px-6">
+      <header className="flex h-14 items-center justify-between border-b border-border px-4 lg:h-[60px] lg:px-6 flex-shrink-0">
         <h2 className="text-lg font-semibold truncate" title={chatTitle}>
           {chatTitle}
         </h2>
@@ -102,7 +102,7 @@ export function ChatWindow() {
           </Button>
         </div>
       </header>
-      <div ref={chatContainerRef} className="flex-1 min-h-0 overflow-y-auto p-4 font-mono text-sm space-y-4">
+      <main ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 font-mono text-sm space-y-4">
         {messages.map((msg) => (
           <div
             key={msg.id}
@@ -139,20 +139,22 @@ export function ChatWindow() {
             </div>
           </div>
         )}
-      </div>
-      <form onSubmit={handleSendMessage} className="border-t border-border p-4 flex items-center gap-2">
-        <Input
-          placeholder="Escribe tu mensaje..."
-          className="flex-1 bg-input text-foreground border-input focus-visible:ring-ring"
-          value={inputMessage}
-          onChange={(e) => setInputMessage(e.target.value)}
-          disabled={isThinking}
-        />
-        <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90" disabled={isThinking}>
-          <Send className="h-4 w-4" />
-          <span className="sr-only">Enviar</span>
-        </Button>
-      </form>
+      </main>
+      <footer className="border-t border-border p-4 flex items-center gap-2 flex-shrink-0">
+        <form onSubmit={handleSendMessage} className="flex w-full items-center gap-2">
+          <Input
+            placeholder="Escribe tu mensaje..."
+            className="flex-1 bg-input text-foreground border-input focus-visible:ring-ring"
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            disabled={isThinking}
+          />
+          <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90" disabled={isThinking}>
+            <Send className="h-4 w-4" />
+            <span className="sr-only">Enviar</span>
+          </Button>
+        </form>
+      </footer>
     </div>
   );
 }
