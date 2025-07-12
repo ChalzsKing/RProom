@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 export function ChatWindow() {
   const {
     activeProvider, getActiveChat, getActiveProject, getActiveFolder, currentPreset,
-    messages, addMessage, clearMessages
+    messages, addMessage, clearMessages, activeGpt
   } = useChat();
   const [inputMessage, setInputMessage] = useState('');
   const [isThinking, setIsThinking] = useState(false);
@@ -48,6 +48,7 @@ export function ChatWindow() {
             temperature: currentPreset.temperature,
             maxLength: currentPreset.maxLength,
             tone: currentPreset.tone,
+            systemPrompt: activeGpt.systemPrompt, // <-- AÑADIDO
           }),
         });
 

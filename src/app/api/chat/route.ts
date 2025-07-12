@@ -16,6 +16,9 @@ interface GeminiMessage {
 async function callDeepSeekApi(messages: AppMessage[], apiKey: string, temperature: number, maxLength: number) {
   const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
   
+  // DeepSeek funciona mejor si el system prompt se combina con el primer mensaje de usuario.
+  // Pero para mantener la consistencia, lo enviaremos como un mensaje de sistema.
+  // La API de DeepSeek lo manejará adecuadamente.
   const apiResponse = await fetch(DEEPSEEK_API_URL, {
     method: 'POST',
     headers: {
@@ -24,7 +27,7 @@ async function callDeepSeekApi(messages: AppMessage[], apiKey: string, temperatu
     },
     body: JSON.stringify({
       model: 'deepseek-chat',
-      messages: messages.filter(msg => msg.role !== 'system'), // DeepSeek no usa un rol 'system' explícito
+      messages: messages,
       temperature: temperature,
       max_tokens: maxLength,
     }),
@@ -49,8 +52,20 @@ async function callDeepSeekApi(messages: AppMessage[], apiKey: string, temperatu
 async function callGeminiApi(messages: AppMessage[], apiKey: string, temperature: number, maxLength: number) {
   const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
 
-  const contents: GeminiMessage[] = messages
-    .filter(msg => msg.role !== 'system')
+  // Gemini no tiene un rol 'system' explícito en el historial de 'contents'.
+  // El contexto del sistema se pasa en un campo separado.
+  let systemInstruction: { parts: { text: string }[] } | undefined = undefined;
+  const regularMessages: AppMessage[] = [];
+
+  messages.forEach(msg => {
+    if (msg.role === 'system') {
+      systemInstruction = { parts: [{ text: msg.content }] };
+    } else {
+      regularMessages.push(msg);
+    }
+  });
+
+  const contents: GeminiMessage[] = regularMessages
     .map(msg => ({
       role: msg.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: msg.content }],
@@ -63,6 +78,7 @@ async function callGeminiApi(messages: AppMessage[], apiKey: string, temperature
     },
     body: JSON.stringify({
       contents: contents,
+      ...(systemInstruction && { systemInstruction }), // Añadir si existe
       generationConfig: {
         temperature: temperature,
         maxOutputTokens: maxLength,
@@ -96,10 +112,15 @@ async function callGeminiApi(messages: AppMessage[], apiKey: string, temperature
 
 export async function POST(req: Request) {
   try {
-    const { provider, messages, temperature, maxLength } = await req.json();
+    const { provider, messages, temperature, maxLength, systemPrompt } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json({ error: 'Formato de mensajes inválido' }, { status: 400 });
+    }
+
+    let messagesWithPrompt = [...messages];
+    if (systemPrompt) {
+      messagesWithPrompt.unshift({ role: 'system', content: systemPrompt });
     }
 
     let assistantMessage: string;
@@ -109,13 +130,13 @@ export async function POST(req: Request) {
       if (!geminiApiKey) {
         return NextResponse.json({ error: 'La clave de API de Gemini no está configurada. Por favor, añádela a tus variables de entorno.' }, { status: 500 });
       }
-      assistantMessage = await callGeminiApi(messages, geminiApiKey, temperature, maxLength);
+      assistantMessage = await callGeminiApi(messagesWithPrompt, geminiApiKey, temperature, maxLength);
     } else { // Por defecto, usar DeepSeek
       const deepseekApiKey = process.env.DEEPSEEK_API_KEY;
       if (!deepseekApiKey) {
         return NextResponse.json({ error: 'La clave de API de DeepSeek no está configurada.' }, { status: 500 });
       }
-      assistantMessage = await callDeepSeekApi(messages, deepseekApiKey, temperature, maxLength);
+      assistantMessage = await callDeepSeekApi(messagesWithPrompt, deepseekApiKey, temperature, maxLength);
     }
 
     return NextResponse.json({ message: assistantMessage });

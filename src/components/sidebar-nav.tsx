@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Folder, Briefcase, MessageSquare, PlusCircle, Plus, Brain } from 'lucide-react';
+import { Folder, Briefcase, MessageSquare, PlusCircle, Plus, Brain, Sparkles } from 'lucide-react';
 import { useChat } from '@/context/chat-context';
 import { cn } from '@/lib/utils';
 import {
@@ -11,12 +11,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { ManageGpts } from './manage-gpts';
 
 export function SidebarNav() {
   const {
     activeProvider, setActiveProvider,
     folders, addFolder, addProject, addChat,
-    activeChatId, setActiveChatId, getActiveProject
+    activeChatId, setActiveChatId, getActiveProject,
+    customGpts, activeGpt, setActiveGpt
   } = useChat();
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -142,6 +144,18 @@ export function SidebarNav() {
                 </AccordionItem>
               ))}
             </Accordion>
+
+            <div className="mt-4 flex items-center justify-between px-3 py-2">
+              <span className="text-xs font-semibold text-muted-foreground">GPTs Personalizados</span>
+              <ManageGpts />
+            </div>
+            {customGpts.map((gpt) => (
+              <a key={gpt.id} href="#" onClick={(e) => { e.preventDefault(); setActiveGpt(gpt.id); }}
+                className={cn("flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary",
+                  activeGpt.id === gpt.id ? "bg-accent text-accent-foreground" : "text-foreground")}>
+                <Sparkles className="h-4 w-4" />{gpt.name}
+              </a>
+            ))}
 
             <div className="mt-4 px-3 py-2 text-xs font-semibold text-muted-foreground">Proveedores de IA</div>
             {providers.map((provider) => (

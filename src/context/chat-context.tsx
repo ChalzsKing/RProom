@@ -11,10 +11,11 @@ interface Preset {
   tone: string;
 }
 
-interface CustomGpt extends Preset {
+export interface CustomGpt extends Preset {
   id: string;
   name:string;
   description: string;
+  systemPrompt: string;
 }
 
 interface Message {
@@ -61,6 +62,7 @@ interface ChatContextType {
   activeGpt: CustomGpt;
   setActiveGpt: (gptId: string) => void;
   customGpts: CustomGpt[];
+  addCustomGpt: (gpt: Omit<CustomGpt, 'id'>) => void;
   messages: Message[];
   addMessage: (role: 'user' | 'assistant', content: string) => void;
   clearMessages: () => void;
@@ -72,6 +74,13 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 const initialMessage: Message = { id: '1', role: 'assistant', content: '¡Hola! ¿En qué puedo ayudarte hoy?', timestamp: new Date() };
 const CHAT_HISTORY_STORAGE_KEY = 'matrix_ai_chat_histories';
 const FOLDERS_STORAGE_KEY = 'matrix_ai_folders';
+const CUSTOM_GPTS_STORAGE_KEY = 'matrix_ai_custom_gpts';
+
+const defaultGpts: CustomGpt[] = [
+    { id: 'general-assistant', name: 'Asistente General', description: 'Un asistente versátil para tareas cotidianas.', systemPrompt: 'Eres un asistente de IA general, útil y amigable.', temperature: 0.7, maxLength: 500, tone: 'neutral' },
+    { id: 'code-helper', name: 'Asistente de Código', description: 'Optimizado para generar y depurar código.', systemPrompt: 'Eres un programador experto. Proporciona código claro, eficiente y bien documentado. Piensa paso a paso y explica tus soluciones.', temperature: 0.5, maxLength: 1500, tone: 'technical' },
+    { id: 'creative-writer', name: 'Redactor Creativo', description: 'Ideal para brainstorming y escritura creativa.', systemPrompt: 'Eres un escritor creativo y un experto en brainstorming. Genera ideas originales, imaginativas y fuera de lo común.', temperature: 0.9, maxLength: 1000, tone: 'imaginative' },
+];
 
 const defaultFolders: Folder[] = [
   {
@@ -93,15 +102,27 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [chatHistories, setChatHistories] = useState<ChatHistories>({});
+  const [customGpts, setCustomGpts] = useState<CustomGpt[]>([]);
+  const [activeGpt, setActiveGptState] = useState<CustomGpt>(defaultGpts[0]);
+  const [currentPreset, setCurrentPreset] = useState<Preset>(defaultGpts[0]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     try {
+      // Cargar carpetas, historiales y GPTs personalizados
       const savedFolders = window.localStorage.getItem(FOLDERS_STORAGE_KEY);
       const savedHistories = window.localStorage.getItem(CHAT_HISTORY_STORAGE_KEY);
+      const savedGpts = window.localStorage.getItem(CUSTOM_GPTS_STORAGE_KEY);
 
       const loadedFolders = savedFolders ? JSON.parse(savedFolders) : defaultFolders;
       setFolders(loadedFolders);
+
+      const loadedGpts = savedGpts ? JSON.parse(savedGpts) : defaultGpts;
+      setCustomGpts(loadedGpts);
+      
+      const firstGpt = loadedGpts[0] || defaultGpts[0];
+      setActiveGptState(firstGpt);
+      setCurrentPreset(firstGpt);
 
       let loadedHistories: ChatHistories = {};
       if (savedHistories) {
@@ -123,8 +144,8 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (e) {
       console.error("Error al cargar desde localStorage", e);
-      // Si hay un error, cargar los valores por defecto
       setFolders(defaultFolders);
+      setCustomGpts(defaultGpts);
       const firstChatId = defaultFolders[0]?.projects[0]?.chats[0]?.id;
       if(firstChatId) {
         setChatHistories({ [firstChatId]: [initialMessage] });
@@ -138,23 +159,10 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (isLoaded) {
       window.localStorage.setItem(FOLDERS_STORAGE_KEY, JSON.stringify(folders));
-    }
-  }, [folders, isLoaded]);
-
-  useEffect(() => {
-    if (isLoaded) {
       window.localStorage.setItem(CHAT_HISTORY_STORAGE_KEY, JSON.stringify(chatHistories));
+      window.localStorage.setItem(CUSTOM_GPTS_STORAGE_KEY, JSON.stringify(customGpts));
     }
-  }, [chatHistories, isLoaded]);
-
-  const customGpts: CustomGpt[] = [
-    { id: 'general-assistant', name: 'Asistente General', description: 'Un asistente versátil para tareas cotidianas.', temperature: 0.7, maxLength: 500, tone: 'neutral' },
-    { id: 'code-helper', name: 'Asistente de Código', description: 'Optimizado para generar y depurar código.', temperature: 0.5, maxLength: 1000, tone: 'technical' },
-    { id: 'creative-writer', name: 'Redactor Creativo', description: 'Ideal para brainstorming y escritura creativa.', temperature: 0.9, maxLength: 750, tone: 'imaginative' },
-  ];
-
-  const [activeGpt, setActiveGptState] = useState<CustomGpt>(customGpts[0]);
-  const [currentPreset, setCurrentPreset] = useState<Preset>(customGpts[0]);
+  }, [folders, chatHistories, customGpts, isLoaded]);
 
   const setActiveGpt = (gptId: string) => {
     const selectedGpt = customGpts.find(gpt => gpt.id === gptId);
@@ -162,6 +170,12 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       setActiveGptState(selectedGpt);
       setCurrentPreset({ temperature: selectedGpt.temperature, maxLength: selectedGpt.maxLength, tone: selectedGpt.tone });
     }
+  };
+
+  const addCustomGpt = (gptData: Omit<CustomGpt, 'id'>) => {
+    const newGpt: CustomGpt = { ...gptData, id: `gpt-${Date.now()}` };
+    setCustomGpts(prev => [...prev, newGpt]);
+    toast.success(`GPT Personalizado "${newGpt.name}" creado.`);
   };
 
   const addFolder = (folderName: string) => {
@@ -236,7 +250,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       getActiveChat, getActiveProject, getActiveFolder,
       currentPreset, setCurrentPreset,
       activeGpt, setActiveGpt,
-      customGpts,
+      customGpts, addCustomGpt,
       messages: activeChatId ? chatHistories[activeChatId] || [] : [],
       addMessage, clearMessages,
     }}>
