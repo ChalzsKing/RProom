@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Send, RefreshCw, User } from 'lucide-react';
 import { useChat } from '@/context/chat-context';
-import { ModelParameters } from './model-parameters';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -70,6 +69,9 @@ export function ChatWindow() {
       const apiMessages = messages.map(({ role, content }) => ({ role, content }));
       apiMessages.push({ role: 'user', content: userMessageContent });
 
+      const adventurePremise = activeAdventure?.premise || '';
+      const finalSystemPrompt = `CONTEXTO DE LA AVENTURA: ${adventurePremise}\n\nINSTRUCCIONES DEL NARRADOR: ${activeNarrator.systemPrompt}`;
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -79,7 +81,7 @@ export function ChatWindow() {
           temperature: activeNarrator.temperature,
           maxLength: activeNarrator.maxLength,
           tone: activeNarrator.tone,
-          systemPrompt: activeNarrator.systemPrompt,
+          systemPrompt: finalSystemPrompt,
         }),
       });
 

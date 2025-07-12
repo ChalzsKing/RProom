@@ -19,6 +19,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -26,6 +27,8 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Sparkles, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const pcSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres.'),
@@ -42,6 +45,8 @@ interface ManagePcsProps {
 export function ManagePcs({ pc, children }: ManagePcsProps) {
   const { addPlayerCharacter, updatePlayerCharacter } = useChat();
   const [open, setOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
   const isEditMode = !!pc;
 
   const form = useForm<PcFormValues>({
@@ -55,8 +60,38 @@ export function ManagePcs({ pc, children }: ManagePcsProps) {
   useEffect(() => {
     if (open) {
       form.reset(pc || { name: '', description: '' });
+      setAiPrompt('');
     }
   }, [pc, form, open]);
+
+  const handleGenerate = async () => {
+    if (!aiPrompt.trim()) {
+      toast.warning('Por favor, introduce una idea para el personaje.');
+      return;
+    }
+    setIsGenerating(true);
+    try {
+      const response = await fetch('/api/generate-character', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: aiPrompt }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al generar el personaje');
+      }
+
+      const data = await response.json();
+      form.setValue('name', data.name, { shouldValidate: true });
+      form.setValue('description', data.description, { shouldValidate: true });
+      toast.success('¡Personaje generado con éxito!');
+    } catch (error: any) {
+      toast.error(`Error: ${error.message}`);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   function onSubmit(values: PcFormValues) {
     if (isEditMode && pc) {
@@ -77,6 +112,27 @@ export function ManagePcs({ pc, children }: ManagePcsProps) {
             {isEditMode ? 'Modifica los detalles de este personaje.' : 'Crea un nuevo personaje para que participe en la aventura.'}
           </SheetDescription>
         </SheetHeader>
+        
+        {!isEditMode && (
+          <div className="my-4 space-y-2 p-4 border rounded-lg bg-secondary/50">
+            <Label htmlFor="ai-prompt" className="flex items-center gap-2 font-semibold">
+              <Sparkles className="h-4 w-4 text-primary" />
+              Generar con IA
+            </Label>
+            <Textarea
+              id="ai-prompt"
+              placeholder="Idea del personaje, ej: 'un pícaro mediano, rápido y silencioso, que siempre tiene un chiste malo a mano'"
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              className="resize-y"
+            />
+            <Button onClick={handleGenerate} disabled={isGenerating} className="w-full">
+              {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+              Generar Personaje
+            </Button>
+          </div>
+        )}
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
             <FormField

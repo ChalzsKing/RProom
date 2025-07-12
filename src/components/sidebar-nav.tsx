@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ManageNarrators } from './manage-narrators';
 import { ManagePcs } from './manage-pcs';
+import { ManageAdventure } from './manage-adventure';
 
 export function SidebarNav() {
   const {
@@ -118,6 +119,12 @@ export function SidebarNav() {
                                 <span>{adventure.name}</span>
                               </div>
                             </AccordionTrigger>
+                            <ManageAdventure adventure={adventure}>
+                               <Button variant="ghost" size="icon" className="h-8 w-8 mr-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Pencil className="h-4 w-4" />
+                                <span className="sr-only">Editar Aventura</span>
+                              </Button>
+                            </ManageAdventure>
                             <Button
                               variant="ghost"
                               size="icon"
