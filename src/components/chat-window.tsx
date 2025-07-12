@@ -13,11 +13,15 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export function ChatWindow() {
-  const { activeProvider, getActiveChat, currentPreset, messages, addMessage, clearMessages } = useChat();
+  const {
+    activeProvider, getActiveChat, getActiveFolder, currentPreset,
+    messages, addMessage, clearMessages
+  } = useChat();
   const [inputMessage, setInputMessage] = useState('');
   const [isThinking, setIsThinking] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const activeChat = getActiveChat();
+  const activeFolder = getActiveFolder();
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -36,9 +40,7 @@ export function ChatWindow() {
       try {
         const response = await fetch('/api/chat', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             provider: activeProvider,
             messages: [...messages, { role: 'user', content: userMessageContent }],
@@ -72,11 +74,15 @@ export function ChatWindow() {
     toast.info('Chat reiniciado.');
   };
 
+  const chatTitle = activeFolder && activeChat
+    ? `${activeFolder.name} / ${activeChat.name}`
+    : 'Chat';
+
   return (
     <div className="flex flex-col h-full bg-background text-foreground">
       <header className="flex h-14 items-center justify-between border-b border-border px-4 lg:h-[60px] lg:px-6">
-        <h2 className="text-lg font-semibold truncate" title={activeChat?.name}>
-          {activeChat?.name || 'Chat'}
+        <h2 className="text-lg font-semibold truncate" title={chatTitle}>
+          {chatTitle}
         </h2>
         <div className="flex items-center gap-2">
           <CustomGptSelector />

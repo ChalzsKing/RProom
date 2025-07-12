@@ -3,6 +3,7 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { toast } from 'sonner';
 
+// --- Tipos de Datos ---
 interface Preset {
   temperature: number;
   maxLength: number;
@@ -27,16 +28,25 @@ interface Chat {
   name: string;
 }
 
+interface Folder {
+  id: string;
+  name: string;
+  chats: Chat[];
+}
+
 type ChatHistories = Record<string, Message[]>; // Keyed by chat ID
 
+// --- Tipo del Contexto ---
 interface ChatContextType {
   activeProvider: string;
   setActiveProvider: (provider: string) => void;
+  folders: Folder[];
+  addFolder: (folderName: string) => void;
+  addChat: (folderId: string, chatName: string) => void;
   activeChatId: string | null;
   setActiveChatId: (chatId: string) => void;
-  chats: Chat[];
-  addChat: (chatName: string) => void;
   getActiveChat: () => Chat | undefined;
+  getActiveFolder: () => Folder | undefined;
   currentPreset: Preset;
   setCurrentPreset: (preset: Preset) => void;
   activeGpt: CustomGpt;
@@ -49,25 +59,35 @@ interface ChatContextType {
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
+// --- Constantes y Valores Iniciales ---
 const initialMessage: Message = { id: '1', role: 'assistant', content: '¡Hola! ¿En qué puedo ayudarte hoy?', timestamp: new Date() };
 const CHAT_HISTORY_STORAGE_KEY = 'matrix_ai_chat_histories';
-const CHATS_STORAGE_KEY = 'matrix_ai_chats';
+const FOLDERS_STORAGE_KEY = 'matrix_ai_folders';
 
+const defaultFolders: Folder[] = [
+  {
+    id: 'folder-1',
+    name: 'General',
+    chats: [{ id: 'chat-1', name: 'Conversación Inicial' }],
+  },
+];
+
+// --- Componente Provider ---
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [activeProvider, setActiveProvider] = useState<string>('DeepSeek');
 
-  const [chats, setChats] = useState<Chat[]>(() => {
-    if (typeof window === 'undefined') return [{ id: 'default', name: 'Conversación General' }];
+  const [folders, setFolders] = useState<Folder[]>(() => {
+    if (typeof window === 'undefined') return defaultFolders;
     try {
-      const saved = window.localStorage.getItem(CHATS_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : [{ id: 'default', name: 'Conversación General' }];
+      const saved = window.localStorage.getItem(FOLDERS_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : defaultFolders;
     } catch (e) {
-      console.error("Error al cargar chats desde localStorage", e);
-      return [{ id: 'default', name: 'Conversación General' }];
+      console.error("Error al cargar carpetas desde localStorage", e);
+      return defaultFolders;
     }
   });
 
-  const [activeChatId, setActiveChatId] = useState<string | null>(chats[0]?.id || null);
+  const [activeChatId, setActiveChatId] = useState<string | null>(folders[0]?.chats[0]?.id || null);
 
   const [chatHistories, setChatHistories] = useState<ChatHistories>(() => {
     let loadedHistories: ChatHistories = {};
@@ -77,28 +97,23 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         if (saved) {
           const parsed = JSON.parse(saved);
           Object.keys(parsed).forEach(chatId => {
-            parsed[chatId] = parsed[chatId].map((msg: any) => ({
-              ...msg,
-              timestamp: new Date(msg.timestamp),
-            }));
+            parsed[chatId] = parsed[chatId].map((msg: any) => ({ ...msg, timestamp: new Date(msg.timestamp) }));
           });
           loadedHistories = parsed;
         }
-      } catch (e) {
-        console.error("Error al cargar el historial del chat desde localStorage", e);
-      }
+      } catch (e) { console.error("Error al cargar historial", e); }
     }
-    if (!loadedHistories[chats[0]?.id]) {
-      loadedHistories[chats[0]?.id] = [initialMessage];
+    if (!loadedHistories[folders[0]?.chats[0]?.id]) {
+      loadedHistories[folders[0]?.chats[0]?.id] = [initialMessage];
     }
     return loadedHistories;
   });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem(CHATS_STORAGE_KEY, JSON.stringify(chats));
+      window.localStorage.setItem(FOLDERS_STORAGE_KEY, JSON.stringify(folders));
     }
-  }, [chats]);
+  }, [folders]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -119,23 +134,32 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     const selectedGpt = customGpts.find(gpt => gpt.id === gptId);
     if (selectedGpt) {
       setActiveGptState(selectedGpt);
-      setCurrentPreset({
-        temperature: selectedGpt.temperature,
-        maxLength: selectedGpt.maxLength,
-        tone: selectedGpt.tone,
-      });
+      setCurrentPreset({ temperature: selectedGpt.temperature, maxLength: selectedGpt.maxLength, tone: selectedGpt.tone });
     }
   };
 
-  const addChat = (chatName: string) => {
-    if (chatName && !chats.some(c => c.name === chatName)) {
-      const newChat: Chat = { id: Date.now().toString(), name: chatName };
-      const newChats = [...chats, newChat];
-      setChats(newChats);
-      setChatHistories(prev => ({
-        ...prev,
-        [newChat.id]: [initialMessage]
-      }));
+  const addFolder = (folderName: string) => {
+    if (folderName && !folders.some(f => f.name === folderName)) {
+      const newFolder: Folder = { id: `folder-${Date.now()}`, name: folderName, chats: [] };
+      setFolders(prev => [...prev, newFolder]);
+      toast.success(`Carpeta "${folderName}" creada.`);
+    } else {
+      toast.error("El nombre de la carpeta ya existe o es inválido.");
+    }
+  };
+
+  const addChat = (folderId: string, chatName: string) => {
+    const folderExists = folders.some(f => f.id === folderId);
+    const chatNameExists = folders.flatMap(f => f.chats).some(c => c.name === chatName);
+
+    if (folderExists && chatName && !chatNameExists) {
+      const newChat: Chat = { id: `chat-${Date.now()}`, name: chatName };
+      setFolders(prevFolders =>
+        prevFolders.map(folder =>
+          folder.id === folderId ? { ...folder, chats: [...folder.chats, newChat] } : folder
+        )
+      );
+      setChatHistories(prev => ({ ...prev, [newChat.id]: [initialMessage] }));
       setActiveChatId(newChat.id);
       toast.success(`Conversación "${chatName}" creada.`);
     } else {
@@ -145,45 +169,29 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
   const addMessage = (role: 'user' | 'assistant', content: string) => {
     if (!activeChatId) return;
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      role,
-      content,
-      timestamp: new Date(),
-    };
-    setChatHistories(prevHistories => ({
-      ...prevHistories,
-      [activeChatId]: [...(prevHistories[activeChatId] || []), newMessage],
-    }));
+    const newMessage: Message = { id: Date.now().toString(), role, content, timestamp: new Date() };
+    setChatHistories(prev => ({ ...prev, [activeChatId]: [...(prev[activeChatId] || []), newMessage] }));
   };
 
   const clearMessages = () => {
     if (!activeChatId) return;
-    setChatHistories(prevHistories => ({
-      ...prevHistories,
-      [activeChatId]: [initialMessage],
-    }));
+    setChatHistories(prev => ({ ...prev, [activeChatId]: [initialMessage] }));
   };
 
-  const getActiveChat = () => chats.find(c => c.id === activeChatId);
+  const getActiveChat = () => folders.flatMap(f => f.chats).find(c => c.id === activeChatId);
+  const getActiveFolder = () => folders.find(f => f.chats.some(c => c.id === activeChatId));
 
   return (
     <ChatContext.Provider value={{
-      activeProvider,
-      setActiveProvider,
-      activeChatId,
-      setActiveChatId,
-      chats,
-      addChat,
-      getActiveChat,
-      currentPreset,
-      setCurrentPreset,
-      activeGpt,
-      setActiveGpt,
+      activeProvider, setActiveProvider,
+      folders, addFolder, addChat,
+      activeChatId, setActiveChatId,
+      getActiveChat, getActiveFolder,
+      currentPreset, setCurrentPreset,
+      activeGpt, setActiveGpt,
       customGpts,
       messages: activeChatId ? chatHistories[activeChatId] || [] : [],
-      addMessage,
-      clearMessages,
+      addMessage, clearMessages,
     }}>
       {children}
     </ChatContext.Provider>
