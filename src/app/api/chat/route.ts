@@ -1,4 +1,4 @@
-import { DeepSeek } from 'deepseek';
+import DeepSeek from 'deepseek'; // Cambiado a importación por defecto
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
