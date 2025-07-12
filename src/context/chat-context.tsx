@@ -76,50 +76,61 @@ const defaultFolders: Folder[] = [
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [activeProvider, setActiveProvider] = useState<string>('DeepSeek');
 
-  const [folders, setFolders] = useState<Folder[]>(() => {
-    if (typeof window === 'undefined') return defaultFolders;
-    try {
-      const saved = window.localStorage.getItem(FOLDERS_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : defaultFolders;
-    } catch (e) {
-      console.error("Error al cargar carpetas desde localStorage", e);
-      return defaultFolders;
-    }
+  // 1. Inicializar el estado con valores por defecto seguros para el servidor
+  const [folders, setFolders] = useState<Folder[]>(defaultFolders);
+  const [activeChatId, setActiveChatId] = useState<string | null>(defaultFolders[0]?.chats[0]?.id || null);
+  const [chatHistories, setChatHistories] = useState<ChatHistories>({
+    [defaultFolders[0]?.chats[0]?.id]: [initialMessage]
   });
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  const [activeChatId, setActiveChatId] = useState<string | null>(folders[0]?.chats[0]?.id || null);
-
-  const [chatHistories, setChatHistories] = useState<ChatHistories>(() => {
-    let loadedHistories: ChatHistories = {};
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = window.localStorage.getItem(CHAT_HISTORY_STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          Object.keys(parsed).forEach(chatId => {
-            parsed[chatId] = parsed[chatId].map((msg: any) => ({ ...msg, timestamp: new Date(msg.timestamp) }));
-          });
-          loadedHistories = parsed;
-        }
-      } catch (e) { console.error("Error al cargar historial", e); }
-    }
-    if (!loadedHistories[folders[0]?.chats[0]?.id]) {
-      loadedHistories[folders[0]?.chats[0]?.id] = [initialMessage];
-    }
-    return loadedHistories;
-  });
-
+  // 2. Cargar desde localStorage en el cliente DESPUÉS del renderizado inicial
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    try {
+      const savedFolders = window.localStorage.getItem(FOLDERS_STORAGE_KEY);
+      const savedHistories = window.localStorage.getItem(CHAT_HISTORY_STORAGE_KEY);
+
+      const loadedFolders = savedFolders ? JSON.parse(savedFolders) : defaultFolders;
+      setFolders(loadedFolders);
+
+      let loadedHistories: ChatHistories = {};
+      if (savedHistories) {
+        const parsed = JSON.parse(savedHistories);
+        Object.keys(parsed).forEach(chatId => {
+          parsed[chatId] = parsed[chatId].map((msg: any) => ({ ...msg, timestamp: new Date(msg.timestamp) }));
+        });
+        loadedHistories = parsed;
+      }
+      
+      if (loadedFolders.length > 0 && loadedFolders[0].chats.length > 0 && !loadedHistories[loadedFolders[0].chats[0].id]) {
+          loadedHistories[loadedFolders[0].chats[0].id] = [initialMessage];
+      }
+      setChatHistories(loadedHistories);
+
+      if (loadedFolders.length > 0 && loadedFolders[0].chats.length > 0) {
+        setActiveChatId(loadedFolders[0].chats[0].id);
+      } else {
+        setActiveChatId(null);
+      }
+    } catch (e) {
+      console.error("Error al cargar desde localStorage", e);
+    } finally {
+      setIsLoaded(true);
+    }
+  }, []); // El array vacío asegura que esto se ejecute solo una vez en el cliente
+
+  // 3. Persistir los cambios en localStorage solo después de que la carga inicial se haya completado
+  useEffect(() => {
+    if (isLoaded) {
       window.localStorage.setItem(FOLDERS_STORAGE_KEY, JSON.stringify(folders));
     }
-  }, [folders]);
+  }, [folders, isLoaded]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (isLoaded) {
       window.localStorage.setItem(CHAT_HISTORY_STORAGE_KEY, JSON.stringify(chatHistories));
     }
-  }, [chatHistories]);
+  }, [chatHistories, isLoaded]);
 
   const customGpts: CustomGpt[] = [
     { id: 'general-assistant', name: 'Asistente General', description: 'Un asistente versátil para tareas cotidianas.', temperature: 0.7, maxLength: 500, tone: 'neutral' },

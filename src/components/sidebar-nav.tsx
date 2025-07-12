@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Folder, Brain, PlusCircle, MessageSquare, Plus } from 'lucide-react';
 import { useChat } from '@/context/chat-context';
 import { cn } from '@/lib/utils';
@@ -23,8 +23,14 @@ export function SidebarNav() {
   const [dialogMode, setDialogMode] = useState<'folder' | 'chat'>('folder');
   const [dialogContext, setDialogContext] = useState<string>(''); // folderId for new chat
   const [newName, setNewName] = useState("");
+  const [openFolders, setOpenFolders] = useState<string[]>([]);
 
   const providers = ['DeepSeek', 'Gemini'];
+
+  useEffect(() => {
+    // Sincroniza el estado del acordeón con las carpetas cargadas
+    setOpenFolders(folders.map(f => f.id));
+  }, [folders]);
 
   const openDialog = (mode: 'folder' | 'chat', context = '') => {
     setDialogMode(mode);
@@ -60,7 +66,7 @@ export function SidebarNav() {
               </Button>
             </div>
 
-            <Accordion type="multiple" className="w-full" defaultValue={folders.map(f => f.id)}>
+            <Accordion type="multiple" className="w-full" value={openFolders} onValueChange={setOpenFolders}>
               {folders.map((folder) => (
                 <AccordionItem key={folder.id} value={folder.id} className="border-b-0">
                   <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-sidebar-accent/50 rounded-md">
