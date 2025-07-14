@@ -28,12 +28,14 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning // Añadido aquí
       >
         <ThemeProvider
           attribute="class"
           defaultTheme="matrix"
           enableSystem
           disableTransitionOnChange
+          storageKey="matrix-rp-theme" // Añadido aquí
         >
           {children}
           <Toaster /> {/* Añadir el Toaster aquí */}
