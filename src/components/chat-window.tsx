@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Send, RefreshCw, User, Users, Dice } from 'lucide-react';
+import { Send, RefreshCw, User, Users, Dice5 } from 'lucide-react'; // Cambiado de Dice a Dice5
 import { useChat } from '@/context/chat-context';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -251,7 +251,7 @@ export function ChatWindow() {
           >
             {isPlayerSpeaking ? (
               <>
-                <Dice className="h-4 w-4" />
+                <Dice5 className="h-4 w-4" /> {/* Cambiado de Dice a Dice5 */}
                 <span className="ml-2">Tirar Dado y Enviar</span>
               </>
             ) : (
