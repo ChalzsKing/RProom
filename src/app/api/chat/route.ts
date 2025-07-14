@@ -80,7 +80,7 @@ async function callGeminiApi(messages: AppMessage[], apiKey: string, temperature
     },
     body: JSON.stringify({
       contents: contents,
-      ...(systemInstruction && { systemInstruction }),
+      ...(systemInstruction ? { systemInstruction } : {}),
       generationConfig: {
         temperature: temperature,
         maxOutputTokens: maxLength,
@@ -143,7 +143,7 @@ export async function POST(req: Request) {
       }
     }
     
-    const diceInterpretationRule = "\n\nREGLA DE DADOS: Si un mensaje de usuario contiene la notación '(Tirada de d4: X)', donde X es un número, interpreta X como el resultado de una tirada de un dado de 4 caras. Usa este resultado para determinar el éxito o fracaso de la acción descrita por el jugador, o para influir en la narrativa de manera apropiada. Por ejemplo, si un jugador dice 'Intento abrir la puerta sigilosamente. (Tirada de d4: 1)', un 1 podría significar un fallo crítico o un ruido fuerte. Si dice '(Tirada de d4: 4)', podría ser un éxito rotundo.";
+    const diceInterpretationRule = "\n\nREGLA DE DADOS: Si un mensaje de usuario contiene la notación '(Tirada de d5: X)', donde X es un número, interpreta X como el resultado de una tirada de un dado de 5 caras (valores de 1 a 5). Usa este resultado para determinar el éxito o fracaso de la acción descrita por el jugador, o para influir en la narrativa de manera apropiada. Por ejemplo, si un jugador dice 'Intento abrir la puerta sigilosamente. (Tirada de d5: 1)', un 1 podría significar un fallo crítico o un ruido fuerte. Si dice '(Tirada de d5: 5)', podría ser un éxito rotundo."; // Cambiado a d5 y rango 1-5
 
     const optionsPrompt = "\n\nREGLA CRÍTICA Y OBLIGATORIA: Es absolutamente esencial que al final de CADA UNA de tus respuestas, sin excepción, propongas una lista numerada de exactamente 4 opciones de acción para el jugador. Deben ser acciones concretas y diferentes entre sí. Formatea la lista así:\n1. [Opción 1]\n2. [Opción 2]\n3. [Opción 3]\n4. [Opción 4]\nEl incumplimiento de esta regla arruina la experiencia del juego.";
 

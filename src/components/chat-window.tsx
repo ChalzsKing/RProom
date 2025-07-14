@@ -3,11 +3,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Send, RefreshCw, User, Users, Dice5 } from 'lucide-react'; // Cambiado de Dice a Dice5
+import { Send, RefreshCw, User, Users, Dice5 } from 'lucide-react';
 import { useChat } from '@/context/chat-context';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { cn, rollD4 } from '@/lib/utils';
+import { cn, rollD5 } from '@/lib/utils'; // Cambiado a rollD5
 import { toast } from 'sonner';
 import { ThemeSwitcher } from './theme-switcher';
 import ReactMarkdown from 'react-markdown';
@@ -59,10 +59,10 @@ export function ChatWindow() {
       if (pc) {
         authorName = pc.name;
       }
-      // Roll the d4 and append to the message
-      const rollResult = rollD4();
-      userMessageContent = `${inputMessage} (Tirada de d4: ${rollResult})`;
-      toast.info(`Has tirado un d4 y obtuviste un ${rollResult}.`);
+      // Roll the d5 and append to the message
+      const rollResult = rollD5(); // Cambiado a rollD5
+      userMessageContent = `${inputMessage} (Tirada de d5: ${rollResult})`; // Cambiado a d5
+      toast.info(`Has tirado un d5 y obtuviste un ${rollResult}.`); // Cambiado a d5
     } else {
       // If the user speaks as DM, their ID is the active narrator's ID
       authorId = activeNarrator.id;
@@ -251,7 +251,7 @@ export function ChatWindow() {
           >
             {isPlayerSpeaking ? (
               <>
-                <Dice5 className="h-4 w-4" /> {/* Cambiado de Dice a Dice5 */}
+                <Dice5 className="h-4 w-4" />
                 <span className="ml-2">Tirar Dado y Enviar</span>
               </>
             ) : (

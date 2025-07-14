@@ -5,6 +5,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function rollD4(): number {
-  return Math.floor(Math.random() * 4) + 1;
+export function rollD5(): number {
+  return Math.floor(Math.random() * 5) + 1;
 }
