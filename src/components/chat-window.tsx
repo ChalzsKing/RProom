@@ -3,11 +3,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Send, RefreshCw, User, Users } from 'lucide-react';
+import { Send, RefreshCw, User, Users, Dice } from 'lucide-react';
 import { useChat } from '@/context/chat-context';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import { cn, rollD4 } from '@/lib/utils';
 import { toast } from 'sonner';
 import { ThemeSwitcher } from './theme-switcher';
 import ReactMarkdown from 'react-markdown';
@@ -32,6 +32,9 @@ export function ChatWindow() {
   const activeAdventure = getActiveAdventure();
   const activeCampaign = getActiveCampaign();
 
+  // Determine if the active speaker is a player character
+  const isPlayerSpeaking = activeSpeakerId !== 'dm';
+
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
@@ -47,17 +50,21 @@ export function ChatWindow() {
     e.preventDefault();
     if (!inputMessage.trim() || isThinking || !activeSessionId) return;
 
-    const userMessageContent = inputMessage;
-    
+    let userMessageContent = inputMessage;
     let authorId = activeSpeakerId;
     let authorName = 'Narrador';
-    if (activeSpeakerId !== 'dm') {
+
+    if (isPlayerSpeaking) {
       const pc = playerCharacters.find(p => p.id === activeSpeakerId);
       if (pc) {
         authorName = pc.name;
       }
+      // Roll the d4 and append to the message
+      const rollResult = rollD4();
+      userMessageContent = `${inputMessage} (Tirada de d4: ${rollResult})`;
+      toast.info(`Has tirado un d4 y obtuviste un ${rollResult}.`);
     } else {
-      // Si el usuario habla como DM, su ID es el del narrador activo
+      // If the user speaks as DM, their ID is the active narrator's ID
       authorId = activeNarrator.id;
     }
 
@@ -237,9 +244,22 @@ export function ChatWindow() {
             onChange={(e) => setInputMessage(e.target.value)}
             disabled={isThinking}
           />
-          <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90" disabled={isThinking}>
-            <Send className="h-4 w-4" />
-            <span className="sr-only">Enviar</span>
+          <Button
+            type="submit"
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+            disabled={isThinking || (isPlayerSpeaking && !inputMessage.trim())}
+          >
+            {isPlayerSpeaking ? (
+              <>
+                <Dice className="h-4 w-4" />
+                <span className="ml-2">Tirar Dado y Enviar</span>
+              </>
+            ) : (
+              <>
+                <Send className="h-4 w-4" />
+                <span className="sr-only">Enviar</span>
+              </>
+            )}
           </Button>
         </form>
       </footer>
