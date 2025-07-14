@@ -7,7 +7,7 @@ import { Send, RefreshCw, User, Users, Dice5 } from 'lucide-react';
 import { useChat } from '@/context/chat-context';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { cn, rollD5 } from '@/lib/utils'; // Cambiado a rollD5
+import { cn, rollD5 } from '@/lib/utils';
 import { toast } from 'sonner';
 import { ThemeSwitcher } from './theme-switcher';
 import ReactMarkdown from 'react-markdown';
@@ -60,9 +60,9 @@ export function ChatWindow() {
         authorName = pc.name;
       }
       // Roll the d5 and append to the message
-      const rollResult = rollD5(); // Cambiado a rollD5
-      userMessageContent = `${inputMessage} (Tirada de d5: ${rollResult})`; // Cambiado a d5
-      toast.info(`Has tirado un d5 y obtuviste un ${rollResult}.`); // Cambiado a d5
+      const rollResult = rollD5();
+      userMessageContent = `${inputMessage} (Tirada de d5: ${rollResult})`;
+      toast.info(`Has tirado un d5 y obtuviste un ${rollResult}.`);
     } else {
       // If the user speaks as DM, their ID is the active narrator's ID
       authorId = activeNarrator.id;
@@ -163,7 +163,7 @@ export function ChatWindow() {
           </Button>
         </div>
       </header>
-      <main ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 font-mono text-sm space-y-4">
+      <main ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 font-mono text-sm space-y-4 pb-24"> {/* Added pb-24 */}
         {messages.map((msg) => {
           const isUserMessage = msg.role === 'user';
           const isNarratorMessage = msg.authorId.startsWith('narrator-') || msg.authorId.startsWith('dungeon-master') || msg.authorId.startsWith('sci-fi-ai') || msg.authorId.startsWith('cthulhu-keeper');
@@ -214,7 +214,7 @@ export function ChatWindow() {
           </div>
         )}
       </main>
-      <footer className="border-t border-border p-4 flex items-center gap-2 flex-shrink-0">
+      <footer className="fixed bottom-0 w-full lg:w-[calc(100%-280px)] border-t border-border p-4 flex items-center gap-2 flex-shrink-0 bg-background"> {/* Added fixed positioning */}
         <form onSubmit={handleSendMessage} className="flex w-full items-center gap-2">
           <Select value={activeSpeakerId} onValueChange={setActiveSpeakerId}>
             <SelectTrigger className="w-[180px]">
