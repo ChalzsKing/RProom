@@ -112,14 +112,12 @@ export function SidebarNav() {
             <Accordion type="multiple" className="w-full" value={openCampaigns} onValueChange={setOpenCampaigns}>
               {(campaigns || []).map((campaign) => (
                 <AccordionItem key={campaign.id} value={campaign.id} className="border-b-0">
-                  <div className="flex items-center w-full rounded-md hover:bg-accent/50 group">
-                    <AccordionTrigger className="flex-1 px-3 py-2 text-left hover:no-underline">
-                      <div className="flex items-center gap-3">
-                        <Folder className="h-4 w-4" />
-                        <span>{campaign.name}</span>
-                      </div>
-                    </AccordionTrigger>
-                    <CampaignManager campaign={campaign}> {/* Botón para abrir el gestor de campaña */}
+                  <AccordionTrigger className="flex items-center w-full rounded-md hover:bg-accent/50 group px-3 py-2 text-left hover:no-underline">
+                    <div className="flex items-center gap-3 flex-1">
+                      <Folder className="h-4 w-4" />
+                      <span>{campaign.name}</span>
+                    </div>
+                    <CampaignManager campaign={campaign}>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -150,7 +148,7 @@ export function SidebarNav() {
                       <Trash2 className="h-4 w-4" />
                       <span className="sr-only">Eliminar Campaña</span>
                     </Button>
-                  </div>
+                  </AccordionTrigger>
                   <AccordionContent className="pl-4 pt-1 space-y-1">
                     <Accordion type="multiple" className="w-full" value={openAdventures} onValueChange={setOpenAdventures}>
                       {(campaign.adventures || []).map((adventure) => (
