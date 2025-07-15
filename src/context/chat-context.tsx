@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useState, useContext, ReactNode, useEffect, useRef, useCallback } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
 import { LoadingScreen } from '@/components/loading-screen';
 import { useCampaigns } from '@/hooks/use-campaigns';
 import { useNarrators } from '@/hooks/use-narrators';
@@ -167,8 +167,7 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [activeProvider, setActiveProvider] = useState<string>('DeepSeek');
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const initializedRef = useRef(false);
+  const [activeSessionId, setActiveSessionIdState] = useState<string | null>(null); // Renamed for clarity
 
   const {
     campaigns, setCampaigns, isCampaignsLoaded,
@@ -201,35 +200,35 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
   // Derived state and getters
   const getActiveCampaign = useCallback(() => {
-    if (!activeSessionId) return undefined;
-    return campaigns.find(c => c.adventures.some(a => a.sessions.some(s => s.id === activeSessionId)));
-  }, [campaigns, activeSessionId]);
+    if (!activeSessionIdState) return undefined; // Use activeSessionIdState here
+    return campaigns.find(c => c.adventures.some(a => a.sessions.some(s => s.id === activeSessionIdState)));
+  }, [campaigns, activeSessionIdState]);
 
   const getActiveAdventure = useCallback(() => {
-    if (!activeSessionId) return undefined;
+    if (!activeSessionIdState) return undefined; // Use activeSessionIdState here
     const campaign = getActiveCampaign();
-    return campaign?.adventures.find(a => a.sessions.some(s => s.id === activeSessionId));
-  }, [activeSessionId, getActiveCampaign]);
+    return campaign?.adventures.find(a => a.sessions.some(s => s.id === activeSessionIdState));
+  }, [activeSessionIdState, getActiveCampaign]);
 
   const getActiveSession = useCallback(() => {
-    if (!activeSessionId) return undefined;
+    if (!activeSessionIdState) return undefined; // Use activeSessionIdState here
     const adventure = getActiveAdventure();
-    return adventure?.sessions.find(s => s.id === activeSessionId);
-  }, [activeSessionId, getActiveAdventure]);
+    return adventure?.sessions.find(s => s.id === activeSessionIdState);
+  }, [activeSessionIdState, getActiveAdventure]);
 
-  const messages = getMessagesForSession(activeSessionId);
+  const messages = getMessagesForSession(activeSessionIdState); // Use activeSessionIdState here
 
   const addMessage = useCallback((message: Omit<Message, 'id' | 'timestamp'>) => {
-    if (activeSessionId) {
-      addMessageHook(activeSessionId, message);
+    if (activeSessionIdState) { // Use activeSessionIdState here
+      addMessageHook(activeSessionIdState, message);
     }
-  }, [activeSessionId, addMessageHook]);
+  }, [activeSessionIdState, addMessageHook]);
 
   const clearMessages = useCallback(() => {
-    if (activeSessionId && activeNarrator) {
-      clearMessagesHook(activeSessionId, activeNarrator);
+    if (activeSessionIdState && activeNarrator) { // Use activeSessionIdState here
+      clearMessagesHook(activeSessionIdState, activeNarrator);
     }
-  }, [activeSessionId, activeNarrator, clearMessagesHook]);
+  }, [activeSessionIdState, activeNarrator, clearMessagesHook]);
 
   const playerCharacters = getActiveCampaign()?.playerCharacters || [];
   const nonPlayerCharacters = getActiveCampaign()?.nonPlayerCharacters || [];
@@ -245,27 +244,26 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     if (deletedSessionIds && deletedSessionIds.length > 0) {
       deleteSessionHistory(deletedSessionIds);
     }
-    if (activeSessionId && deletedSessionIds?.includes(activeSessionId)) {
+    if (activeSessionIdState && deletedSessionIds?.includes(activeSessionIdState)) { // Use activeSessionIdState here
       // If the active session was deleted, try to set a new active session
       const firstAvailableSessionId = campaigns[0]?.adventures?.[0]?.sessions?.[0]?.id;
-      setActiveSessionId(firstAvailableSessionId || null);
+      setActiveSessionIdState(firstAvailableSessionId || null); // Use activeSessionIdState here
     }
-  }, [deleteCampaignHook, deleteSessionHistory, activeSessionId, campaigns]);
+  }, [deleteCampaignHook, deleteSessionHistory, activeSessionIdState, campaigns]); // Use activeSessionIdState here
 
 
   const isLoaded = isCampaignsLoaded && isNarratorsLoaded && isChatHistoryLoaded && isSceneStatesLoaded;
 
   // Initialize active session and chat history on first load
   useEffect(() => {
-    if (isLoaded && !initializedRef.current && campaigns.length > 0 && activeNarrator) {
-      initializedRef.current = true;
+    if (isLoaded && campaigns.length > 0 && activeNarrator && activeSessionIdState === null) {
       const firstSessionId = campaigns[0]?.adventures?.[0]?.sessions?.[0]?.id;
       if (firstSessionId) {
-        setActiveSessionId(firstSessionId);
+        setActiveSessionIdState(firstSessionId); // Use activeSessionIdState here
         initializeSessionHistory(firstSessionId, activeNarrator);
       }
     }
-  }, [isLoaded, campaigns, activeNarrator, initializeSessionHistory]);
+  }, [isLoaded, campaigns, activeNarrator, activeSessionIdState, initializeSessionHistory]); // activeSessionIdState is a dependency to ensure the effect reacts when it's null
 
   if (!isLoaded || !activeNarrator) {
     return <LoadingScreen />;
@@ -282,8 +280,8 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       addAdventure,
       updateAdventure,
       addSession,
-      activeSessionId,
-      setActiveSessionId,
+      activeSessionId: activeSessionIdState, // Provide the state value
+      setActiveSessionId: setActiveSessionIdState, // Provide the state setter
       getActiveCampaign,
       getActiveAdventure,
       getActiveSession,
