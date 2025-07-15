@@ -23,6 +23,11 @@ interface CampaignContext {
   uniqueFeatures: string;
   worldTone: string;
   campaignNpcs: { name: string; description: string }[];
+  locations: { name: string; type: string; description: string }[];
+  factions: { name: string; description: string; keyLeaders?: string; relationships?: string }[];
+  glossary: { term: string; definition: string }[];
+  importantItems: { name: string; description: string; properties?: string }[];
+  houseRules: { title: string; rule: string }[];
 }
 
 // --- Funciones de Llamada a la API ---
@@ -131,7 +136,7 @@ export async function POST(req: Request) {
 
     // --- Añadir contexto de campaña ---
     if (campaignContext) {
-      const { worldDescription, uniqueFeatures, worldTone, campaignNpcs } = campaignContext as CampaignContext;
+      const { worldDescription, uniqueFeatures, worldTone, campaignNpcs, locations, factions, glossary, importantItems, houseRules } = campaignContext as CampaignContext;
       
       if (worldDescription) {
         finalSystemPrompt = `CONTEXTO DEL MUNDO: ${worldDescription}\n\n` + finalSystemPrompt;
@@ -145,6 +150,26 @@ export async function POST(req: Request) {
       if (campaignNpcs && campaignNpcs.length > 0) {
         const npcList = campaignNpcs.map(npc => `${npc.name} (${npc.description})`).join('; ');
         finalSystemPrompt = `PERSONAJES RECURRENTES DE LA CAMPAÑA: ${npcList}\n\n` + finalSystemPrompt;
+      }
+      if (locations && locations.length > 0) {
+        const locationList = locations.map(loc => `${loc.name} (${loc.type}): ${loc.description}`).join('\n');
+        finalSystemPrompt = `LOCALIZACIONES IMPORTANTES:\n${locationList}\n\n` + finalSystemPrompt;
+      }
+      if (factions && factions.length > 0) {
+        const factionList = factions.map(fac => `${fac.name}: ${fac.description} (Líderes: ${fac.keyLeaders || 'N/A'}, Relaciones: ${fac.relationships || 'N/A'})`).join('\n');
+        finalSystemPrompt = `FACCIONES Y ORGANIZACIONES:\n${factionList}\n\n` + finalSystemPrompt;
+      }
+      if (glossary && glossary.length > 0) {
+        const glossaryList = glossary.map(term => `${term.term}: ${term.definition}`).join('\n');
+        finalSystemPrompt = `GLOSARIO DE TÉRMINOS:\n${glossaryList}\n\n` + finalSystemPrompt;
+      }
+      if (importantItems && importantItems.length > 0) {
+        const itemList = importantItems.map(item => `${item.name}: ${item.description} (Propiedades: ${item.properties || 'N/A'})`).join('\n');
+        finalSystemPrompt = `OBJETOS Y ARTEFACTOS IMPORTANTES:\n${itemList}\n\n` + finalSystemPrompt;
+      }
+      if (houseRules && houseRules.length > 0) {
+        const ruleList = houseRules.map(rule => `${rule.title}: ${rule.rule}`).join('\n');
+        finalSystemPrompt = `REGLAS DE JUEGO ESPECÍFICAS / HOUSE RULES:\n${ruleList}\n\n` + finalSystemPrompt;
       }
     }
 

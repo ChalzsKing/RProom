@@ -44,6 +44,40 @@ export interface Adventure {
   sessions: Session[];
 }
 
+export interface Location {
+  id: string;
+  name: string;
+  type: string; // e.g., "Ciudad", "Ruina", "Dungeon"
+  description: string;
+}
+
+export interface Faction {
+  id: string;
+  name: string;
+  description: string;
+  keyLeaders: string; // Comma-separated names or brief descriptions
+  relationships: string; // Free text for now, e.g., "Aliado con X, Enemigo de Y"
+}
+
+export interface GlossaryTerm {
+  id: string;
+  term: string;
+  definition: string;
+}
+
+export interface ImportantItem {
+  id: string;
+  name: string;
+  description: string;
+  properties: string; // e.g., "Otorga +2 a la fuerza, brilla en presencia de orcos"
+}
+
+export interface HouseRule {
+  id: string;
+  title: string;
+  rule: string;
+}
+
 export interface Campaign {
   id: string;
   name: string;
@@ -54,6 +88,11 @@ export interface Campaign {
   playerCharacters: PlayerCharacter[];
   nonPlayerCharacters: NonPlayerCharacter[]; // PNJs de aventura
   campaignNpcs: NonPlayerCharacter[]; // Nueva: PNJs recurrentes a nivel de campaña
+  locations: Location[]; // Nueva
+  factions: Faction[]; // Nueva
+  glossary: GlossaryTerm[]; // Nueva
+  importantItems: ImportantItem[]; // Nueva
+  houseRules: HouseRule[]; // Nueva
 }
 
 type ChatHistories = Record<string, Message[]>; // Keyed by session ID
@@ -67,7 +106,7 @@ interface ChatContextType {
   setActiveProvider: (provider: string) => void;
   campaigns: Campaign[];
   addCampaign: (campaignName: string) => void;
-  updateCampaign: (campaignId: string, campaignData: Partial<Omit<Campaign, 'id' | 'adventures' | 'playerCharacters' | 'nonPlayerCharacters'>>) => void; // Nueva
+  updateCampaign: (campaignId: string, campaignData: Partial<Omit<Campaign, 'id' | 'adventures' | 'playerCharacters' | 'nonPlayerCharacters' | 'locations' | 'factions' | 'glossary' | 'importantItems' | 'houseRules'>>) => void; // Nueva
   deleteCampaign: (campaignId: string) => void;
   addAdventure: (campaignId: string, adventureData: { name: string; premise: string }) => void;
   updateAdventure: (adventureId: string, adventureData: Omit<Adventure, 'id' | 'sessions'>) => void;
@@ -97,6 +136,31 @@ interface ChatContextType {
   addCampaignNpc: (campaignId: string, npc: Omit<NonPlayerCharacter, 'id'>) => void; // Nueva
   updateCampaignNpc: (campaignId: string, npcId: string, npcData: Omit<NonPlayerCharacter, 'id'>) => void; // Nueva
   deleteCampaignNpc: (campaignId: string, npcId: string) => void; // Nueva
+
+  locations: Location[];
+  addLocation: (campaignId: string, location: Omit<Location, 'id'>) => void;
+  updateLocation: (campaignId: string, locationId: string, locationData: Omit<Location, 'id'>) => void;
+  deleteLocation: (campaignId: string, locationId: string) => void;
+
+  factions: Faction[];
+  addFaction: (campaignId: string, faction: Omit<Faction, 'id'>) => void;
+  updateFaction: (campaignId: string, factionId: string, factionData: Omit<Faction, 'id'>) => void;
+  deleteFaction: (campaignId: string, factionId: string) => void;
+
+  glossary: GlossaryTerm[];
+  addGlossaryTerm: (campaignId: string, term: Omit<GlossaryTerm, 'id'>) => void;
+  updateGlossaryTerm: (campaignId: string, termId: string, termData: Omit<GlossaryTerm, 'id'>) => void;
+  deleteGlossaryTerm: (campaignId: string, termId: string) => void;
+
+  importantItems: ImportantItem[];
+  addImportantItem: (campaignId: string, item: Omit<ImportantItem, 'id'>) => void;
+  updateImportantItem: (campaignId: string, itemId: string, itemData: Omit<ImportantItem, 'id'>) => void;
+  deleteImportantItem: (campaignId: string, itemId: string) => void;
+
+  houseRules: HouseRule[];
+  addHouseRule: (campaignId: string, rule: Omit<HouseRule, 'id'>) => void;
+  updateHouseRule: (campaignId: string, ruleId: string, ruleData: Omit<HouseRule, 'id'>) => void;
+  deleteHouseRule: (campaignId: string, ruleId: string) => void;
 
   messages: Message[];
   addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => void;
@@ -146,6 +210,24 @@ const defaultCampaigns: Campaign[] = [
       { id: 'cnpc-1', name: 'Gundren Rockseeker', description: 'Un enano buscador de tesoros, amigo de los jugadores, que ha descubierto la ubicación de la Cueva de la Ola Esmeralda.' },
       { id: 'cnpc-2', name: 'Halia Thornton', description: 'La astuta dueña de la Tienda de Intercambio de Phandalin, con conexiones con el Gremio de Zhentarim.' },
     ],
+    locations: [
+      { id: 'loc-1', name: 'Phandalin', type: 'Pueblo', description: 'Un pequeño pueblo minero en la frontera, reconstruyéndose tras una incursión de goblins. Es un centro de actividad para aventureros y comerciantes.' },
+      { id: 'loc-2', name: 'Cueva de la Ola Esmeralda', type: 'Dungeon', description: 'Una antigua mina de los enanos, ahora infestada de criaturas y con secretos mágicos en sus profundidades.' },
+    ],
+    factions: [
+      { id: 'fac-1', name: 'Zhentarim', description: 'Una red sombría de comerciantes y mercenarios que buscan poder e influencia. Operan en las sombras y tienen agentes en muchos asentamientos.', keyLeaders: 'Halia Thornton', relationships: 'Neutral con la Alianza de los Señores, hostil con los Redbrands.' },
+      { id: 'fac-2', name: 'Alianza de los Señores', description: 'Una coalición de ciudades-estado y nobles que buscan mantener el orden y la civilización en la región. A menudo envían agentes para investigar amenazas.', keyLeaders: 'Lord Neverember', relationships: 'Aliado con la Orden del Guantelete, neutral con los Zhentarim.' },
+    ],
+    glossary: [
+      { id: 'term-1', term: 'Redbrands', definition: 'Una banda de matones que aterroriza Phandalin, liderada por un misterioso mago. Visten capas rojas.' },
+      { id: 'term-2', term: 'Cragmaw Castle', definition: 'Una fortaleza goblin, hogar del Rey Grol y sus secuaces. Se rumorea que tienen un prisionero importante.' },
+    ],
+    importantItems: [
+      { id: 'item-1', name: 'Espada de la Luna Creciente', description: 'Una espada larga élfica antigua, forjada con plata lunar. Emite una luz tenue en la oscuridad.', properties: 'Daño extra contra criaturas de la noche, +1 a la iniciativa.' },
+    ],
+    houseRules: [
+      { id: 'rule-1', title: 'Tiradas de Inspiración', rule: 'Los jugadores pueden ganar un punto de inspiración por acciones heroicas o interpretativas. Pueden gastar un punto para obtener ventaja en una tirada.' },
+    ],
   },
 ];
 
@@ -177,7 +259,12 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         worldTone: campaign.worldTone || 'neutral',
         playerCharacters: campaign.playerCharacters || [],
         nonPlayerCharacters: campaign.nonPlayerCharacters || [],
-        campaignNpcs: campaign.campaignNpcs || [], // Initialize new field
+        campaignNpcs: campaign.campaignNpcs || [],
+        locations: campaign.locations || [], // Initialize new field
+        factions: campaign.factions || [], // Initialize new field
+        glossary: campaign.glossary || [], // Initialize new field
+        importantItems: campaign.importantItems || [], // Initialize new field
+        houseRules: campaign.houseRules || [], // Initialize new field
       }));
       
       setCampaigns(loadedCampaigns);
@@ -338,6 +425,146 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     toast.success('PNJ de campaña eliminado.');
   };
 
+  const addLocation = (campaignId: string, locationData: Omit<Location, 'id'>) => {
+    const newLocation: Location = { ...locationData, id: `loc-${Date.now()}` };
+    setCampaigns(prev => prev.map(c => 
+      c.id === campaignId 
+        ? { ...c, locations: [...c.locations, newLocation] } 
+        : c
+    ));
+    toast.success(`Localización "${newLocation.name}" creada.`);
+  };
+
+  const updateLocation = (campaignId: string, locationId: string, locationData: Omit<Location, 'id'>) => {
+    setCampaigns(prev => prev.map(c => 
+      c.id === campaignId
+        ? { ...c, locations: c.locations.map(loc => loc.id === locationId ? { ...loc, ...locationData } : loc) }
+        : c
+    ));
+    toast.success(`Localización "${locationData.name}" actualizada.`);
+  };
+
+  const deleteLocation = (campaignId: string, locationId: string) => {
+    setCampaigns(prev => prev.map(c => 
+      c.id === campaignId
+        ? { ...c, locations: c.locations.filter(loc => loc.id !== locationId) } 
+        : c
+    ));
+    toast.success('Localización eliminada.');
+  };
+
+  const addFaction = (campaignId: string, factionData: Omit<Faction, 'id'>) => {
+    const newFaction: Faction = { ...factionData, id: `fac-${Date.now()}` };
+    setCampaigns(prev => prev.map(c => 
+      c.id === campaignId 
+        ? { ...c, factions: [...c.factions, newFaction] } 
+        : c
+    ));
+    toast.success(`Facción "${newFaction.name}" creada.`);
+  };
+
+  const updateFaction = (campaignId: string, factionId: string, factionData: Omit<Faction, 'id'>) => {
+    setCampaigns(prev => prev.map(c => 
+      c.id === campaignId
+        ? { ...c, factions: c.factions.map(fac => fac.id === factionId ? { ...fac, ...factionData } : fac) }
+        : c
+    ));
+    toast.success(`Facción "${factionData.name}" actualizada.`);
+  };
+
+  const deleteFaction = (campaignId: string, factionId: string) => {
+    setCampaigns(prev => prev.map(c => 
+      c.id === campaignId
+        ? { ...c, factions: c.factions.filter(fac => fac.id !== factionId) } 
+        : c
+    ));
+    toast.success('Facción eliminada.');
+  };
+
+  const addGlossaryTerm = (campaignId: string, termData: Omit<GlossaryTerm, 'id'>) => {
+    const newTerm: GlossaryTerm = { ...termData, id: `term-${Date.now()}` };
+    setCampaigns(prev => prev.map(c => 
+      c.id === campaignId 
+        ? { ...c, glossary: [...c.glossary, newTerm] } 
+        : c
+    ));
+    toast.success(`Término "${newTerm.term}" añadido al glosario.`);
+  };
+
+  const updateGlossaryTerm = (campaignId: string, termId: string, termData: Omit<GlossaryTerm, 'id'>) => {
+    setCampaigns(prev => prev.map(c => 
+      c.id === campaignId
+        ? { ...c, glossary: c.glossary.map(term => term.id === termId ? { ...term, ...termData } : term) }
+        : c
+    ));
+    toast.success(`Término "${termData.term}" actualizado.`);
+  };
+
+  const deleteGlossaryTerm = (campaignId: string, termId: string) => {
+    setCampaigns(prev => prev.map(c => 
+      c.id === campaignId
+        ? { ...c, glossary: c.glossary.filter(term => term.id !== termId) } 
+        : c
+    ));
+    toast.success('Término del glosario eliminado.');
+  };
+
+  const addImportantItem = (campaignId: string, itemData: Omit<ImportantItem, 'id'>) => {
+    const newItem: ImportantItem = { ...itemData, id: `item-${Date.now()}` };
+    setCampaigns(prev => prev.map(c => 
+      c.id === campaignId 
+        ? { ...c, importantItems: [...c.importantItems, newItem] } 
+        : c
+    ));
+    toast.success(`Objeto "${newItem.name}" añadido.`);
+  };
+
+  const updateImportantItem = (campaignId: string, itemId: string, itemData: Omit<ImportantItem, 'id'>) => {
+    setCampaigns(prev => prev.map(c => 
+      c.id === campaignId
+        ? { ...c, importantItems: c.importantItems.map(item => item.id === itemId ? { ...item, ...itemData } : item) }
+        : c
+    ));
+    toast.success(`Objeto "${itemData.name}" actualizado.`);
+  };
+
+  const deleteImportantItem = (campaignId: string, itemId: string) => {
+    setCampaigns(prev => prev.map(c => 
+      c.id === campaignId
+        ? { ...c, importantItems: c.importantItems.filter(item => item.id !== itemId) } 
+        : c
+    ));
+    toast.success('Objeto eliminado.');
+  };
+
+  const addHouseRule = (campaignId: string, ruleData: Omit<HouseRule, 'id'>) => {
+    const newRule: HouseRule = { ...ruleData, id: `rule-${Date.now()}` };
+    setCampaigns(prev => prev.map(c => 
+      c.id === campaignId 
+        ? { ...c, houseRules: [...c.houseRules, newRule] } 
+        : c
+    ));
+    toast.success(`Regla "${newRule.title}" añadida.`);
+  };
+
+  const updateHouseRule = (campaignId: string, ruleId: string, ruleData: Omit<HouseRule, 'id'>) => {
+    setCampaigns(prev => prev.map(c => 
+      c.id === campaignId
+        ? { ...c, houseRules: c.houseRules.map(rule => rule.id === ruleId ? { ...rule, ...ruleData } : rule) }
+        : c
+    ));
+    toast.success(`Regla "${ruleData.title}" actualizada.`);
+  };
+
+  const deleteHouseRule = (campaignId: string, ruleId: string) => {
+    setCampaigns(prev => prev.map(c => 
+      c.id === campaignId
+        ? { ...c, houseRules: c.houseRules.filter(rule => rule.id !== ruleId) } 
+        : c
+    ));
+    toast.success('Regla eliminada.');
+  };
+
   const addCampaign = (campaignName: string) => {
     const newCampaign: Campaign = { 
       id: `campaign-${Date.now()}`, 
@@ -349,6 +576,11 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       playerCharacters: [], 
       nonPlayerCharacters: [],
       campaignNpcs: [],
+      locations: [], // Initialize new field
+      factions: [], // Initialize new field
+      glossary: [], // Initialize new field
+      importantItems: [], // Initialize new field
+      houseRules: [], // Initialize new field
     };
     setCampaigns(prev => [...prev, newCampaign]);
     toast.success(`Campaña "${campaignName}" creada.`);
@@ -443,6 +675,12 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const playerCharacters = activeCampaign ? activeCampaign.playerCharacters : [];
   const nonPlayerCharacters = activeCampaign ? activeCampaign.nonPlayerCharacters : [];
   const campaignNpcs = activeCampaign ? activeCampaign.campaignNpcs : [];
+  const locations = activeCampaign ? activeCampaign.locations : [];
+  const factions = activeCampaign ? activeCampaign.factions : [];
+  const glossary = activeCampaign ? activeCampaign.glossary : [];
+  const importantItems = activeCampaign ? activeCampaign.importantItems : [];
+  const houseRules = activeCampaign ? activeCampaign.houseRules : [];
+
 
   if (!isLoaded) {
     return <LoadingScreen />;
@@ -459,6 +697,11 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       playerCharacters, addPlayerCharacter, updatePlayerCharacter,
       nonPlayerCharacters, addNonPlayerCharacter, updateNonPlayerCharacter, deleteNonPlayerCharacter,
       campaignNpcs, addCampaignNpc, updateCampaignNpc, deleteCampaignNpc,
+      locations, addLocation, updateLocation, deleteLocation,
+      factions, addFaction, updateFaction, deleteFaction,
+      glossary, addGlossaryTerm, updateGlossaryTerm, deleteGlossaryTerm,
+      importantItems, addImportantItem, updateImportantItem, deleteImportantItem,
+      houseRules, addHouseRule, updateHouseRule, deleteHouseRule,
       messages: activeSessionId ? chatHistories[activeSessionId] || [] : [],
       addMessage, clearMessages,
       sceneStates, updateSceneState,

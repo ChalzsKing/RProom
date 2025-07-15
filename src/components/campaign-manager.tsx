@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useChat, Campaign, NonPlayerCharacter } from '@/context/chat-context';
+import { useChat, Campaign, NonPlayerCharacter, Adventure, Location, Faction, GlossaryTerm, ImportantItem, HouseRule } from '@/context/chat-context';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -29,9 +29,15 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, Bot } from 'lucide-react';
+import { Plus, Pencil, Trash2, Bot, MapPin, Users, Book, Gem, ScrollText, Briefcase } from 'lucide-react';
 import { toast } from 'sonner';
-import { ManageNpcs } from './manage-npcs'; // Reusing for campaign NPCs
+import { ManageNpcs } from './manage-npcs';
+import { ManageLocation } from './manage-location';
+import { ManageFaction } from './manage-faction';
+import { ManageGlossaryTerm } from './manage-glossary-term';
+import { ManageImportantItem } from './manage-important-item';
+import { ManageHouseRule } from './manage-house-rule';
+import { ManageAdventure } from './manage-adventure'; // Reusing existing component
 
 const campaignSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
@@ -59,7 +65,16 @@ const worldTones = [
 ];
 
 export function CampaignManager({ campaign, children }: CampaignManagerProps) {
-  const { updateCampaign, campaignNpcs, addCampaignNpc, updateCampaignNpc, deleteCampaignNpc } = useChat();
+  const { 
+    updateCampaign, 
+    campaignNpcs, deleteCampaignNpc,
+    locations, deleteLocation,
+    factions, deleteFaction,
+    glossary, deleteGlossaryTerm,
+    importantItems, deleteImportantItem,
+    houseRules, deleteHouseRule,
+    addAdventure, // For the 'Aventuras' tab
+  } = useChat();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
 
@@ -96,6 +111,36 @@ export function CampaignManager({ campaign, children }: CampaignManagerProps) {
     }
   };
 
+  const handleDeleteLocation = (locationId: string) => {
+    if (window.confirm('¿Estás seguro de que quieres eliminar esta localización?')) {
+      deleteLocation(campaign.id, locationId);
+    }
+  };
+
+  const handleDeleteFaction = (factionId: string) => {
+    if (window.confirm('¿Estás seguro de que quieres eliminar esta facción?')) {
+      deleteFaction(campaign.id, factionId);
+    }
+  };
+
+  const handleDeleteGlossaryTerm = (termId: string) => {
+    if (window.confirm('¿Estás seguro de que quieres eliminar este término del glosario?')) {
+      deleteGlossaryTerm(campaign.id, termId);
+    }
+  };
+
+  const handleDeleteImportantItem = (itemId: string) => {
+    if (window.confirm('¿Estás seguro de que quieres eliminar este objeto importante?')) {
+      deleteImportantItem(campaign.id, itemId);
+    }
+  };
+
+  const handleDeleteHouseRule = (ruleId: string) => {
+    if (window.confirm('¿Estás seguro de que quieres eliminar esta regla de la casa?')) {
+      deleteHouseRule(campaign.id, ruleId);
+    }
+  };
+
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>{children}</SheetTrigger>
@@ -108,12 +153,13 @@ export function CampaignManager({ campaign, children }: CampaignManagerProps) {
         </SheetHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col py-4">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="general">Visión General</TabsTrigger>
-            <TabsTrigger value="npcs">PNJs Recurrentes</TabsTrigger>
-            {/* <TabsTrigger value="locations">Localizaciones</TabsTrigger> */}
-            {/* <TabsTrigger value="factions">Facciones</TabsTrigger> */}
-            {/* <TabsTrigger value="rules">Reglas y Glosario</TabsTrigger> */}
+          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
+            <TabsTrigger value="general">General</TabsTrigger>
+            <TabsTrigger value="npcs">PNJs</TabsTrigger>
+            <TabsTrigger value="locations">Lugares</TabsTrigger>
+            <TabsTrigger value="factions">Facciones</TabsTrigger>
+            <TabsTrigger value="resources">Recursos</TabsTrigger>
+            <TabsTrigger value="adventures">Aventuras</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general" className="flex-1 overflow-y-auto pr-4 mt-4">
@@ -212,7 +258,7 @@ export function CampaignManager({ campaign, children }: CampaignManagerProps) {
           <TabsContent value="npcs" className="flex-1 overflow-y-auto pr-4 mt-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">PNJs Recurrentes de Campaña</h3>
-              <ManageNpcs campaignId={campaign.id} isCampaignNpc={true}> {/* Pass isCampaignNpc prop */}
+              <ManageNpcs campaignId={campaign.id} isCampaignNpc={true}>
                 <Button variant="outline" size="sm">
                   <Plus className="mr-2 h-4 w-4" />
                   Añadir PNJ
@@ -233,7 +279,7 @@ export function CampaignManager({ campaign, children }: CampaignManagerProps) {
                       </div>
                     </div>
                     <div className="flex gap-1">
-                      <ManageNpcs npc={npc} campaignId={campaign.id} isCampaignNpc={true}> {/* Pass isCampaignNpc prop */}
+                      <ManageNpcs npc={npc} campaignId={campaign.id} isCampaignNpc={true}>
                         <Button variant="ghost" size="icon" className="h-8 w-8">
                           <Pencil className="h-4 w-4" />
                           <span className="sr-only">Editar PNJ</span>
@@ -243,6 +289,247 @@ export function CampaignManager({ campaign, children }: CampaignManagerProps) {
                         <Trash2 className="h-4 w-4" />
                         <span className="sr-only">Eliminar PNJ</span>
                       </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="locations" className="flex-1 overflow-y-auto pr-4 mt-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Localizaciones</h3>
+              <ManageLocation campaignId={campaign.id}>
+                <Button variant="outline" size="sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Añadir Lugar
+                </Button>
+              </ManageLocation>
+            </div>
+            {locations.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">No hay localizaciones en esta campaña. Añade algunas para que la IA las recuerde.</p>
+            ) : (
+              <div className="space-y-2">
+                {locations.map((loc) => (
+                  <div key={loc.id} className="flex items-center justify-between rounded-md p-3 bg-secondary/50 border border-border">
+                    <div className="flex items-center gap-3">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">{loc.name} <span className="text-xs text-muted-foreground">({loc.type})</span></p>
+                        <p className="text-sm text-muted-foreground line-clamp-1">{loc.description}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <ManageLocation location={loc} campaignId={campaign.id}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Pencil className="h-4 w-4" />
+                          <span className="sr-only">Editar Localización</span>
+                        </Button>
+                      </ManageLocation>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteLocation(loc.id)}>
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Eliminar Localización</span>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="factions" className="flex-1 overflow-y-auto pr-4 mt-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Facciones y Organizaciones</h3>
+              <ManageFaction campaignId={campaign.id}>
+                <Button variant="outline" size="sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Añadir Facción
+                </Button>
+              </ManageFaction>
+            </div>
+            {factions.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">No hay facciones en esta campaña. Añade algunas para que la IA las recuerde.</p>
+            ) : (
+              <div className="space-y-2">
+                {factions.map((fac) => (
+                  <div key={fac.id} className="flex items-center justify-between rounded-md p-3 bg-secondary/50 border border-border">
+                    <div className="flex items-center gap-3">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">{fac.name}</p>
+                        <p className="text-sm text-muted-foreground line-clamp-1">{fac.description}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <ManageFaction faction={fac} campaignId={campaign.id}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Pencil className="h-4 w-4" />
+                          <span className="sr-only">Editar Facción</span>
+                        </Button>
+                      </ManageFaction>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteFaction(fac.id)}>
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Eliminar Facción</span>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="resources" className="flex-1 overflow-y-auto pr-4 mt-4">
+            <h3 className="text-lg font-semibold mb-4">Recursos y Reglas del Mundo</h3>
+            
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="font-semibold">Glosario de Términos</h4>
+              <ManageGlossaryTerm campaignId={campaign.id}>
+                <Button variant="outline" size="sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Añadir Término
+                </Button>
+              </ManageGlossaryTerm>
+            </div>
+            {glossary.length === 0 ? (
+              <p className="text-muted-foreground text-center py-4">No hay términos en el glosario.</p>
+            ) : (
+              <div className="space-y-2 mb-6">
+                {glossary.map((term) => (
+                  <div key={term.id} className="flex items-center justify-between rounded-md p-3 bg-secondary/50 border border-border">
+                    <div className="flex items-center gap-3">
+                      <Book className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">{term.term}</p>
+                        <p className="text-sm text-muted-foreground line-clamp-1">{term.definition}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <ManageGlossaryTerm term={term} campaignId={campaign.id}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Pencil className="h-4 w-4" />
+                          <span className="sr-only">Editar Término</span>
+                        </Button>
+                      </ManageGlossaryTerm>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteGlossaryTerm(term.id)}>
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Eliminar Término</span>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="font-semibold">Objetos y Artefactos Importantes</h4>
+              <ManageImportantItem campaignId={campaign.id}>
+                <Button variant="outline" size="sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Añadir Objeto
+                </Button>
+              </ManageImportantItem>
+            </div>
+            {importantItems.length === 0 ? (
+              <p className="text-muted-foreground text-center py-4">No hay objetos importantes.</p>
+            ) : (
+              <div className="space-y-2 mb-6">
+                {importantItems.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between rounded-md p-3 bg-secondary/50 border border-border">
+                    <div className="flex items-center gap-3">
+                      <Gem className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">{item.name}</p>
+                        <p className="text-sm text-muted-foreground line-clamp-1">{item.description}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <ManageImportantItem item={item} campaignId={campaign.id}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Pencil className="h-4 w-4" />
+                          <span className="sr-only">Editar Objeto</span>
+                        </Button>
+                      </ManageImportantItem>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteImportantItem(item.id)}>
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Eliminar Objeto</span>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="font-semibold">Reglas de Juego Específicas / "House Rules"</h4>
+              <ManageHouseRule campaignId={campaign.id}>
+                <Button variant="outline" size="sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Añadir Regla
+                </Button>
+              </ManageHouseRule>
+            </div>
+            {houseRules.length === 0 ? (
+              <p className="text-muted-foreground text-center py-4">No hay reglas de la casa.</p>
+            ) : (
+              <div className="space-y-2">
+                {houseRules.map((rule) => (
+                  <div key={rule.id} className="flex items-center justify-between rounded-md p-3 bg-secondary/50 border border-border">
+                    <div className="flex items-center gap-3">
+                      <ScrollText className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">{rule.title}</p>
+                        <p className="text-sm text-muted-foreground line-clamp-1">{rule.rule}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <ManageHouseRule rule={rule} campaignId={campaign.id}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Pencil className="h-4 w-4" />
+                          <span className="sr-only">Editar Regla</span>
+                        </Button>
+                      </ManageHouseRule>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteHouseRule(rule.id)}>
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Eliminar Regla</span>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="adventures" className="flex-1 overflow-y-auto pr-4 mt-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Aventuras de la Campaña</h3>
+              <ManageAdventure campaignId={campaign.id}>
+                <Button variant="outline" size="sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nueva Aventura
+                </Button>
+              </ManageAdventure>
+            </div>
+            {campaign.adventures.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">No hay aventuras en esta campaña. ¡Crea una para empezar!</p>
+            ) : (
+              <div className="space-y-2">
+                {campaign.adventures.map((adventure) => (
+                  <div key={adventure.id} className="flex items-center justify-between rounded-md p-3 bg-secondary/50 border border-border">
+                    <div className="flex items-center gap-3">
+                      <Briefcase className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">{adventure.name}</p>
+                        <p className="text-sm text-muted-foreground line-clamp-1">{adventure.premise}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <ManageAdventure adventure={adventure} campaignId={campaign.id}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Pencil className="h-4 w-4" />
+                          <span className="sr-only">Editar Aventura</span>
+                        </Button>
+                      </ManageAdventure>
+                      {/* No hay deleteAdventure en el contexto, se podría añadir si es necesario */}
                     </div>
                   </div>
                 ))}
