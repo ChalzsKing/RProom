@@ -6,6 +6,7 @@ import { useLocalStorage } from './use-local-storage';
 import { Narrator } from '@/context/chat-context';
 
 const NARRATORS_STORAGE_KEY = 'rp_narrators';
+const ACTIVE_NARRATOR_ID_KEY = 'rp_active_narrator_id';
 
 const defaultNarrators: Narrator[] = [
     { id: 'dungeon-master', name: 'Dungeon Master', description: 'Un narrador clásico para aventuras de fantasía.', systemPrompt: 'Eres un maestro de ceremonias para un juego de rol de fantasía. Describes escenarios vívidos, interpretas a personajes no jugadores y reaccionas a las acciones del usuario para tejer una historia colaborativa e inmersiva. Tu tono es épico y descriptivo.', temperature: 0.8, maxLength: 1200, tone: 'narrativo' },
@@ -15,20 +16,21 @@ const defaultNarrators: Narrator[] = [
 
 export function useNarrators() {
   const [narrators, setNarrators, isNarratorsLoaded] = useLocalStorage<Narrator[]>(NARRATORS_STORAGE_KEY, defaultNarrators);
-  // Initialize activeNarrator to null, it will be set in useEffect
   const [activeNarrator, setActiveNarratorState] = useState<Narrator | null>(null);
 
-  // Set initial active narrator once loaded
   useEffect(() => {
     if (isNarratorsLoaded && narrators.length > 0 && activeNarrator === null) {
-      setActiveNarratorState(narrators[0]);
+      const activeId = localStorage.getItem(ACTIVE_NARRATOR_ID_KEY);
+      const found = narrators.find(n => n.id === activeId);
+      setActiveNarratorState(found || narrators[0]);
     }
-  }, [isNarratorsLoaded, narrators, activeNarrator]); // activeNarrator is now a dependency, but it will only be null once.
+  }, [isNarratorsLoaded, narrators, activeNarrator]);
 
   const setActiveNarrator = useCallback((narratorId: string) => {
     const selectedNarrator = narrators.find(n => n.id === narratorId);
     if (selectedNarrator) {
       setActiveNarratorState(selectedNarrator);
+      localStorage.setItem(ACTIVE_NARRATOR_ID_KEY, narratorId);
     }
   }, [narrators]);
 
@@ -49,7 +51,7 @@ export function useNarrators() {
     narrators,
     setNarrators,
     isNarratorsLoaded,
-    activeNarrator: activeNarrator || defaultNarrators[0], // Provide a fallback for activeNarrator
+    activeNarrator,
     setActiveNarrator,
     addNarrator,
     updateNarrator,

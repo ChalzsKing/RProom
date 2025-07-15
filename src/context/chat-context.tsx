@@ -228,7 +228,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
   // Initialize active session and chat history on first load
   useEffect(() => {
-    if (isLoaded && activeSessionId === null && campaigns.length > 0 && activeNarrator) { // Add activeNarrator check
+    if (isLoaded && activeSessionId === null && campaigns.length > 0 && activeNarrator) {
       const firstSessionId = campaigns[0]?.adventures?.[0]?.sessions?.[0]?.id;
       if (firstSessionId) {
         setActiveSessionId(firstSessionId);
@@ -240,7 +240,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   // Override addSession to also initialize chat history
   const addSession = (adventureId: string, sessionName: string) => {
     const newSession = addSessionHook(adventureId, sessionName);
-    if (newSession) {
+    if (newSession && activeNarrator) {
       setActiveSessionId(newSession.id);
       initializeSessionHistory(newSession.id, activeNarrator);
     }
@@ -268,12 +268,12 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
   // Override clearMessages to pass activeSessionId and activeNarrator
   const clearMessages = () => {
-    if (activeSessionId) {
+    if (activeSessionId && activeNarrator) {
       clearMessagesHook(activeSessionId, activeNarrator);
     }
   };
 
-  if (!isLoaded) {
+  if (!isLoaded || !activeNarrator) {
     return <LoadingScreen />;
   }
 
