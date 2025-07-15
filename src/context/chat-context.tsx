@@ -7,61 +7,83 @@ import { useNarrators } from '@/hooks/use-narrators';
 import { useChatHistory } from '@/hooks/use-chat-history';
 import { useSceneStates } from '@/hooks/use-scene-states';
 
-// ... (keep all your existing type definitions)
+// --- Type Definitions ---
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  authorId: string;
+  authorName: string;
+}
+
+interface Session {
+  id: string;
+  name: string;
+}
+
+interface Adventure {
+  id: string;
+  name: string;
+  premise: string;
+  sessions: Session[];
+}
+
+interface PlayerCharacter {
+  id: string;
+  name: string;
+  description: string;
+}
+
+type NonPlayerCharacter = PlayerCharacter;
+
+interface Campaign {
+  id: string;
+  name: string;
+  worldDescription: string;
+  uniqueFeatures: string;
+  worldTone: string;
+  adventures: Adventure[];
+  playerCharacters: PlayerCharacter[];
+  nonPlayerCharacters: NonPlayerCharacter[];
+}
+
+type SceneControl = 'player' | 'ai' | 'absent';
+type SceneStates = Record<string, Record<string, SceneControl>>;
+
+interface Narrator {
+  id: string;
+  name: string;
+  description: string;
+  systemPrompt: string;
+  temperature: number;
+  maxLength: number;
+  tone: string;
+}
+
+interface ChatContextType {
+  activeProvider: string;
+  setActiveProvider: (provider: string) => void;
+  campaigns: Campaign[];
+  // ... include all other context properties
+  sceneStates: SceneStates;
+  updateSceneState: (sessionId: string, characterId: string, control: SceneControl) => void;
+}
+
+// Create the context with proper typing
+const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [activeProvider, setActiveProvider] = useState<string>('DeepSeek');
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const initializedRef = useRef(false);
 
-  const {
-    campaigns, setCampaigns, isCampaignsLoaded,
-    // ... other campaign hooks
-  } = useCampaigns();
-
-  const {
-    narrators, setNarrators, isNarratorsLoaded,
-    activeNarrator, setActiveNarrator, addNarrator, updateNarrator,
-  } = useNarrators();
-
-  const {
-    chatHistories, setChatHistories, isChatHistoryLoaded,
-    getMessagesForSession, addMessage: addMessageHook, clearMessages: clearMessagesHook,
-    deleteSessionHistory, initializeSessionHistory,
-  } = useChatHistory();
-
-  const {
-    sceneStates, setSceneStates, isSceneStatesLoaded,
-    updateSceneState,
-  } = useSceneStates();
-
-  // Derived state
-  const getActiveCampaign = () => campaigns.find(c => c.adventures.some(a => a.sessions.some(s => s.id === activeSessionId)));
-  // ... other derived state functions
-
-  const isLoaded = isCampaignsLoaded && isNarratorsLoaded && isChatHistoryLoaded && isSceneStatesLoaded;
-
-  // Initialize active session and chat history
-  useEffect(() => {
-    if (isLoaded && !initializedRef.current && campaigns.length > 0 && activeNarrator) {
-      initializedRef.current = true;
-      const firstSessionId = campaigns[0]?.adventures?.[0]?.sessions?.[0]?.id;
-      if (firstSessionId) {
-        setActiveSessionId(firstSessionId);
-        initializeSessionHistory(firstSessionId, activeNarrator);
-      }
-    }
-  }, [isLoaded, campaigns, activeNarrator, initializeSessionHistory]);
-
-  // ... rest of your component implementation
-
-  if (!isLoaded || !activeNarrator) {
-    return <LoadingScreen />;
-  }
+  // ... rest of your existing provider implementation
 
   return (
     <ChatContext.Provider value={{
-      // ... your context values
+      activeProvider,
+      setActiveProvider,
+      // ... include all other context values
     }}>
       {children}
     </ChatContext.Provider>
