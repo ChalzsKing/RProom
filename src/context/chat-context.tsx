@@ -228,7 +228,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
   // Initialize active session and chat history on first load
   useEffect(() => {
-    if (isLoaded && activeSessionId === null && campaigns.length > 0) {
+    if (isLoaded && activeSessionId === null && campaigns.length > 0 && activeNarrator) { // Add activeNarrator check
       const firstSessionId = campaigns[0]?.adventures?.[0]?.sessions?.[0]?.id;
       if (firstSessionId) {
         setActiveSessionId(firstSessionId);
