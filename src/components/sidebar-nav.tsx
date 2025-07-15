@@ -15,6 +15,7 @@ import { ManageNarrators } from './manage-narrators';
 import { ManagePcs } from './manage-pcs';
 import { ManageNpcs } from './manage-npcs';
 import { ManageAdventure } from './manage-adventure';
+import { CampaignManager } from './campaign-manager'; // Importar el nuevo componente
 
 export function SidebarNav() {
   const {
@@ -118,6 +119,17 @@ export function SidebarNav() {
                         <span>{campaign.name}</span>
                       </div>
                     </AccordionTrigger>
+                    <CampaignManager campaign={campaign}> {/* Botón para abrir el gestor de campaña */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent"
+                        onClick={(e) => { e.stopPropagation(); }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                        <span className="sr-only">Gestionar Campaña</span>
+                      </Button>
+                    </CampaignManager>
                     <ManageAdventure campaignId={campaign.id}>
                       <Button
                         variant="ghost"
@@ -207,7 +219,7 @@ export function SidebarNav() {
                                   <Pencil className="h-4 w-4" />
                                   <span className="sr-only">Editar Personaje</span>
                                 </Button>
-                              </ManagePcs>
+                              </ManagePpcs>
                             </div>
                           ))}
                         </AccordionContent>
@@ -220,7 +232,7 @@ export function SidebarNav() {
                           <AccordionTrigger className="flex-1 px-3 py-2 text-left hover:no-underline">
                             <div className="flex items-center gap-3">
                               <Bot className="h-4 w-4" />
-                              <span>PNJs</span>
+                              <span>PNJs de Aventura</span>
                             </div>
                           </AccordionTrigger>
                           <ManageNpcs campaignId={campaign.id}>

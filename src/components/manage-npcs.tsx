@@ -42,10 +42,11 @@ interface ManageNpcsProps {
   npc?: NonPlayerCharacter;
   campaignId: string;
   children: React.ReactNode;
+  isCampaignNpc?: boolean; // Nueva prop para distinguir PNJs de campaña
 }
 
-export function ManageNpcs({ npc, campaignId, children }: ManageNpcsProps) {
-  const { addNonPlayerCharacter, updateNonPlayerCharacter } = useChat();
+export function ManageNpcs({ npc, campaignId, children, isCampaignNpc = false }: ManageNpcsProps) {
+  const { addNonPlayerCharacter, updateNonPlayerCharacter, addCampaignNpc, updateCampaignNpc } = useChat();
   const [open, setOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -96,10 +97,18 @@ export function ManageNpcs({ npc, campaignId, children }: ManageNpcsProps) {
   };
 
   function onSubmit(values: NpcFormValues) {
-    if (isEditMode && npc) {
-      updateNonPlayerCharacter(campaignId, npc.id, values);
+    if (isCampaignNpc) {
+      if (isEditMode && npc) {
+        updateCampaignNpc(campaignId, npc.id, values);
+      } else {
+        addCampaignNpc(campaignId, values);
+      }
     } else {
-      addNonPlayerCharacter(campaignId, values);
+      if (isEditMode && npc) {
+        updateNonPlayerCharacter(campaignId, npc.id, values);
+      } else {
+        addNonPlayerCharacter(campaignId, values);
+      }
     }
     setOpen(false);
   }
@@ -109,7 +118,7 @@ export function ManageNpcs({ npc, campaignId, children }: ManageNpcsProps) {
       <SheetTrigger asChild>{children}</SheetTrigger>
       <SheetContent className="w-[400px] sm:w-[540px] bg-background text-foreground border-l border-border">
         <SheetHeader>
-          <SheetTitle>{isEditMode ? 'Editar' : 'Crear'} Personaje No Jugador (PNJ)</SheetTitle>
+          <SheetTitle>{isEditMode ? 'Editar' : 'Crear'} Personaje No Jugador ({isCampaignNpc ? 'Campaña' : 'Aventura'})</SheetTitle>
           <SheetDescription>
             {isEditMode ? 'Modifica los detalles de este PNJ.' : 'Crea un nuevo PNJ para poblar tu mundo. Puedes crearlo manualmente o pedirle a la IA que lo genere por ti.'}
           </SheetDescription>

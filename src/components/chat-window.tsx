@@ -20,7 +20,7 @@ export function ChatWindow() {
   const {
     activeProvider, getActiveSession, getActiveAdventure, getActiveCampaign,
     messages, addMessage, clearMessages, activeNarrator, playerCharacters,
-    activeSessionId, sceneStates
+    activeSessionId, sceneStates, campaignNpcs
   } = useChat();
   
   const [inputMessage, setInputMessage] = useState('');
@@ -90,6 +90,14 @@ export function ChatWindow() {
         control: currentSceneState[pc.id] || 'player',
       })).filter(pc => pc.control !== 'absent');
 
+      // Prepare campaign context for the API
+      const campaignContext = activeCampaign ? {
+        worldDescription: activeCampaign.worldDescription,
+        uniqueFeatures: activeCampaign.uniqueFeatures,
+        worldTone: activeCampaign.worldTone,
+        campaignNpcs: activeCampaign.campaignNpcs,
+      } : undefined;
+
       const finalSystemPrompt = `CONTEXTO DE LA AVENTURA: ${adventurePremise}\n\nINSTRUCCIONES DEL NARRADOR: ${activeNarrator.systemPrompt}`;
 
       const response = await fetch('/api/chat', {
@@ -103,6 +111,7 @@ export function ChatWindow() {
           tone: activeNarrator.tone,
           systemPrompt: finalSystemPrompt,
           sceneCharacters: sceneCharacters,
+          campaignContext: campaignContext, // Pass the new campaign context
         }),
       });
 
