@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react'; // Importar useEffect
 import { toast } from 'sonner';
 import { useLocalStorage } from './use-local-storage';
 import { Narrator } from '@/context/chat-context';
@@ -18,12 +18,13 @@ export function useNarrators() {
   const [activeNarrator, setActiveNarratorState] = useState<Narrator>(defaultNarrators[0]);
 
   // Set initial active narrator once loaded
-  // This useEffect runs after the initial load from localStorage
-  // and ensures activeNarrator is set to the first loaded narrator
-  // or the default if none are loaded.
-  if (isNarratorsLoaded && !activeNarrator.id && narrators.length > 0) {
-    setActiveNarratorState(narrators[0]);
-  }
+  useEffect(() => {
+    // Solo inicializar si los narradores han cargado y el narrador activo es todavía el valor por defecto
+    // o si no hay un narrador activo válido y hay narradores disponibles.
+    if (isNarratorsLoaded && narrators.length > 0 && activeNarrator.id === defaultNarrators[0].id) {
+      setActiveNarratorState(narrators[0]);
+    }
+  }, [isNarratorsLoaded, narrators, activeNarrator.id]); // Dependencias para re-evaluar cuando cambien
 
   const setActiveNarrator = useCallback((narratorId: string) => {
     const selectedNarrator = narrators.find(n => n.id === narratorId);
@@ -47,7 +48,7 @@ export function useNarrators() {
 
   return {
     narrators,
-    setNarrators, // Expose setNarrators for initial load/reset logic in ChatProvider
+    setNarrators,
     isNarratorsLoaded,
     activeNarrator,
     setActiveNarrator,
