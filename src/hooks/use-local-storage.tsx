@@ -31,13 +31,16 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T
 
   const setValue: SetValue<T> = useCallback((value) => {
     try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
-      window.localStorage.setItem(key, JSON.stringify(valueToStore));
+      // Use functional update to get the latest state without needing it in useCallback's deps
+      setStoredValue((prev) => {
+        const valueToStore = value instanceof Function ? value(prev) : value;
+        window.localStorage.setItem(key, JSON.stringify(valueToStore));
+        return valueToStore;
+      });
     } catch (error) {
       console.error(`Error saving to localStorage key "${key}":`, error);
     }
-  }, [key, storedValue]);
+  }, [key]); // Only `key` is needed here, as `setStoredValue` is stable.
 
   return [storedValue, setValue, isLoaded];
 }
