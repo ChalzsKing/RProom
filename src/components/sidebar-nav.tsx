@@ -219,7 +219,7 @@ export function SidebarNav() {
                                   <Pencil className="h-4 w-4" />
                                   <span className="sr-only">Editar Personaje</span>
                                 </Button>
-                              </ManagePpcs>
+                              </ManagePcs>
                             </div>
                           ))}
                         </AccordionContent>
