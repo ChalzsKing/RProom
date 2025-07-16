@@ -392,6 +392,24 @@ export function useCampaigns() {
             }));
             newCampaign.factions.push(...newFactions);
           }
+          if (worldData.glossary && Array.isArray(worldData.glossary)) {
+            const newTerms = worldData.glossary.map((term: Omit<GlossaryTerm, 'id'>) => ({
+              ...term, id: generateUniqueId('term')
+            }));
+            newCampaign.glossary.push(...newTerms);
+          }
+          if (worldData.importantItems && Array.isArray(worldData.importantItems)) {
+            const newItems = worldData.importantItems.map((item: Omit<ImportantItem, 'id'>) => ({
+              ...item, id: generateUniqueId('item')
+            }));
+            newCampaign.importantItems.push(...newItems);
+          }
+          if (worldData.houseRules && Array.isArray(worldData.houseRules)) {
+            const newRules = worldData.houseRules.map((rule: Omit<HouseRule, 'id'>) => ({
+              ...rule, id: generateUniqueId('rule')
+            }));
+            newCampaign.houseRules.push(...newRules);
+          }
           if (worldData.adventures && Array.isArray(worldData.adventures)) {
             const newAdventures = worldData.adventures.map((adv: { name: string; premise: string }) => ({
               ...adv, id: generateUniqueId('adventure'), sessions: []

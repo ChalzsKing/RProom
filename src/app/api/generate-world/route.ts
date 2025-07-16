@@ -20,8 +20,18 @@ async function callApi(apiKey: string, prompt: string) {
   ],
   "factions": [
     { "name": "Nombre de la Facción 1", "description": "Descripción de sus objetivos, ideología y métodos.", "keyLeaders": "Líder 1, Líder 2", "relationships": "Relaciones con otras facciones (ej: 'Aliados con X, enemigos de Y')." },
-    { "name": "Nombre de la Facción 2", "description": "Descripción de la facción 2.", "keyLeaders": "Líder 3", "relationships": "Relaciones de la facción 2." },
-    { "name": "Nombre de la Facción 3", "description": "Descripción de la facción 3.", "keyLeaders": "Líder 4", "relationships": "Relaciones de la facción 3." }
+    { "name": "Nombre de la Facción 2", "description": "Descripción de la facción 2.", "keyLeaders": "Líder 3", "relationships": "Relaciones de la facción 2." }
+  ],
+  "glossary": [
+    { "term": "Término Clave 1", "definition": "Definición del término clave 1, relevante para el mundo." },
+    { "term": "Término Clave 2", "definition": "Definición del término clave 2." }
+  ],
+  "importantItems": [
+    { "name": "Objeto Importante 1", "description": "Descripción del objeto, su historia o apariencia.", "properties": "Efectos o habilidades del objeto." },
+    { "name": "Objeto Importante 2", "description": "Descripción del objeto 2.", "properties": "Efectos del objeto 2." }
+  ],
+  "houseRules": [
+    { "title": "Regla de la Casa 1", "rule": "Descripción de una mecánica de juego única para este mundo." }
   ],
   "adventures": [
     { "name": "Nombre de la Aventura 1", "premise": "La premisa o gancho inicial de la aventura 1." },
