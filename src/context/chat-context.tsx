@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react'; // Import useMemo
 import { LoadingScreen } from '@/components/loading-screen';
 import { useCampaigns } from '@/hooks/use-campaigns';
 import { useNarrators } from '@/hooks/use-narrators';
@@ -250,6 +250,17 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   // Messages for the active session
   const messages = getMessagesForSession(activeSessionId);
 
+  // Memoize derived data to prevent unnecessary re-renders
+  const activeCampaign = getActiveCampaign();
+  const playerCharacters = useMemo(() => activeCampaign?.playerCharacters || [], [activeCampaign]);
+  const nonPlayerCharacters = useMemo(() => activeCampaign?.nonPlayerCharacters || [], [activeCampaign]);
+  const campaignNpcs = useMemo(() => activeCampaign?.campaignNpcs || [], [activeCampaign]);
+  const locations = useMemo(() => activeCampaign?.locations || [], [activeCampaign]);
+  const factions = useMemo(() => activeCampaign?.factions || [], [activeCampaign]);
+  const glossary = useMemo(() => activeCampaign?.glossary || [], [activeCampaign]);
+  const importantItems = useMemo(() => activeCampaign?.importantItems || [], [activeCampaign]);
+  const houseRules = useMemo(() => activeCampaign?.houseRules || [], [activeCampaign]);
+
   // Wrapped addMessage and clearMessages to pass activeSessionId
   const addMessage = useCallback((message: Omit<Message, 'id' | 'timestamp'>) => {
     if (activeSessionId) {
@@ -295,17 +306,6 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     return <LoadingScreen />;
   }
 
-  // Get player characters and campaign NPCs for the active campaign
-  const activeCampaign = getActiveCampaign();
-  const playerCharacters = activeCampaign?.playerCharacters || [];
-  const nonPlayerCharacters = activeCampaign?.nonPlayerCharacters || [];
-  const campaignNpcs = activeCampaign?.campaignNpcs || [];
-  const locations = activeCampaign?.locations || [];
-  const factions = activeCampaign?.factions || [];
-  const glossary = activeCampaign?.glossary || [];
-  const importantItems = activeCampaign?.importantItems || [];
-  const houseRules = activeCampaign?.houseRules || [];
-
   return (
     <ChatContext.Provider value={{
       activeProvider,
@@ -322,34 +322,34 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       narrators,
       activeNarrator,
       setActiveNarrator,
-      playerCharacters,
+      playerCharacters, // Now memoized
       addPlayerCharacter,
       updatePlayerCharacter,
-      nonPlayerCharacters,
+      nonPlayerCharacters, // Now memoized
       addNonPlayerCharacter,
       updateNonPlayerCharacter,
       deleteNonPlayerCharacter,
-      campaignNpcs,
+      campaignNpcs, // Now memoized
       addCampaignNpc,
       updateCampaignNpc,
       deleteCampaignNpc,
-      locations,
+      locations, // Now memoized
       addLocation,
       updateLocation,
       deleteLocation,
-      factions,
+      factions, // Now memoized
       addFaction,
       updateFaction,
       deleteFaction,
-      glossary,
+      glossary, // Now memoized
       addGlossaryTerm,
       updateGlossaryTerm,
       deleteGlossaryTerm,
-      importantItems,
+      importantItems, // Now memoized
       addImportantItem,
       updateImportantItem,
       deleteImportantItem,
-      houseRules,
+      houseRules, // Now memoized
       addHouseRule,
       updateHouseRule,
       deleteHouseRule,

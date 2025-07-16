@@ -29,8 +29,9 @@ export function useNarrators() {
       const found = narrators.find(n => n.id === activeId);
       const currentActive = found || narrators[0];
       
-      // Only update state if it's actually different to prevent loops
-      if (activeNarrator?.id !== currentActive.id) {
+      // Only update state if the ID of the current active narrator is different
+      // from the ID of the narrator that should be active.
+      if (!activeNarrator || activeNarrator.id !== currentActive.id) {
         setActiveNarratorState(currentActive);
         // If the found narrator was invalid, update localStorage with the default
         if (!found) {
@@ -44,7 +45,8 @@ export function useNarrators() {
         localStorage.removeItem(ACTIVE_NARRATOR_ID_KEY);
       }
     }
-  }, [isNarratorsLoaded, narrators, activeNarrator]);
+  }, [isNarratorsLoaded, narrators]); // Removed activeNarrator from dependencies
+  // The `activeNarrator` state is updated *inside* the effect, so it shouldn't be a dependency itself.
 
   const setActiveNarrator = useCallback((narratorId: string) => {
     const selectedNarrator = narrators.find(n => n.id === narratorId);
