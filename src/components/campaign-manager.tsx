@@ -68,13 +68,13 @@ const worldTones = [
 export function CampaignManager({ campaign, children }: CampaignManagerProps) {
   const { 
     updateCampaign, 
-    addCampaignNpc, campaignNpcs, deleteCampaignNpc,
-    addLocation, locations, deleteLocation,
-    addFaction, factions, deleteFaction,
+    campaignNpcs, deleteCampaignNpc,
+    locations, deleteLocation,
+    factions, deleteFaction,
     glossary, deleteGlossaryTerm,
     importantItems, deleteImportantItem,
     houseRules, deleteHouseRule,
-    addAdventure,
+    populateCampaignFromAI,
   } = useChat();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
@@ -131,15 +131,12 @@ export function CampaignManager({ campaign, children }: CampaignManagerProps) {
 
       const data = await response.json();
 
-      // Update form fields
+      // Update form fields for immediate feedback
       form.setValue('worldDescription', data.worldDescription, { shouldValidate: true });
       form.setValue('uniqueFeatures', data.uniqueFeatures, { shouldValidate: true });
 
-      // Add generated content to the campaign
-      data.campaignNpcs?.forEach((npc: any) => addCampaignNpc(campaign.id, npc));
-      data.locations?.forEach((loc: any) => addLocation(campaign.id, loc));
-      data.factions?.forEach((fac: any) => addFaction(campaign.id, fac));
-      data.adventures?.forEach((adv: any) => addAdventure(campaign.id, adv));
+      // Call the atomic function to update the campaign state with all generated items
+      populateCampaignFromAI(campaign.id, data);
 
       toast.success('¡Mundo generado con éxito! Revisa las pestañas.', { id: toastId });
     } catch (error: any) {

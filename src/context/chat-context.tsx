@@ -162,6 +162,7 @@ interface ChatContextType {
   getActiveSession: () => Session | undefined;
   sceneStates: SceneStates;
   updateSceneState: (sessionId: string, characterId: string, control: SceneControl) => void;
+  populateCampaignFromAI: (campaignId: string, worldData: any) => void; // Add new function
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -190,6 +191,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     addGlossaryTerm, updateGlossaryTerm, deleteGlossaryTerm,
     addImportantItem, updateImportantItem, deleteImportantItem,
     addHouseRule, updateHouseRule, deleteHouseRule,
+    populateCampaignFromAI, // Get new function
   } = campaignsData;
 
   const {
@@ -322,34 +324,36 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       narrators,
       activeNarrator,
       setActiveNarrator,
-      playerCharacters, // Now memoized
+      addNarrator,
+      updateNarrator,
+      playerCharacters,
       addPlayerCharacter,
       updatePlayerCharacter,
-      nonPlayerCharacters, // Now memoized
+      nonPlayerCharacters,
       addNonPlayerCharacter,
       updateNonPlayerCharacter,
       deleteNonPlayerCharacter,
-      campaignNpcs, // Now memoized
+      campaignNpcs,
       addCampaignNpc,
       updateCampaignNpc,
       deleteCampaignNpc,
-      locations, // Now memoized
+      locations,
       addLocation,
       updateLocation,
       deleteLocation,
-      factions, // Now memoized
+      factions,
       addFaction,
       updateFaction,
       deleteFaction,
-      glossary, // Now memoized
+      glossary,
       addGlossaryTerm,
       updateGlossaryTerm,
       deleteGlossaryTerm,
-      importantItems, // Now memoized
+      importantItems,
       addImportantItem,
       updateImportantItem,
       deleteImportantItem,
-      houseRules, // Now memoized
+      houseRules,
       addHouseRule,
       updateHouseRule,
       deleteHouseRule,
@@ -362,6 +366,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       getActiveSession,
       sceneStates,
       updateSceneState,
+      populateCampaignFromAI, // Pass new function
     }}>
       {children}
     </ChatContext.Provider>

@@ -362,9 +362,52 @@ export function useCampaigns() {
     toast.success('Regla eliminada.');
   }, [setCampaigns]);
 
+  // --- NEW ATOMIC FUNCTION ---
+  const populateCampaignFromAI = useCallback((campaignId: string, worldData: any) => {
+    setCampaigns(prev => 
+      prev.map(c => {
+        if (c.id === campaignId) {
+          const newCampaign = { ...c };
+
+          // Overwrite descriptions
+          newCampaign.worldDescription = worldData.worldDescription || newCampaign.worldDescription;
+          newCampaign.uniqueFeatures = worldData.uniqueFeatures || newCampaign.uniqueFeatures;
+
+          // Add new items
+          if (worldData.campaignNpcs && Array.isArray(worldData.campaignNpcs)) {
+            const newNpcs = worldData.campaignNpcs.map((npc: Omit<NonPlayerCharacter, 'id'>) => ({
+              ...npc, id: generateUniqueId('cnpc')
+            }));
+            newCampaign.campaignNpcs.push(...newNpcs);
+          }
+          if (worldData.locations && Array.isArray(worldData.locations)) {
+            const newLocations = worldData.locations.map((loc: Omit<Location, 'id'>) => ({
+              ...loc, id: generateUniqueId('loc')
+            }));
+            newCampaign.locations.push(...newLocations);
+          }
+          if (worldData.factions && Array.isArray(worldData.factions)) {
+            const newFactions = worldData.factions.map((fac: Omit<Faction, 'id'>) => ({
+              ...fac, id: generateUniqueId('fac')
+            }));
+            newCampaign.factions.push(...newFactions);
+          }
+          if (worldData.adventures && Array.isArray(worldData.adventures)) {
+            const newAdventures = worldData.adventures.map((adv: { name: string; premise: string }) => ({
+              ...adv, id: generateUniqueId('adventure'), sessions: []
+            }));
+            newCampaign.adventures.push(...newAdventures);
+          }
+          return newCampaign;
+        }
+        return c;
+      })
+    );
+  }, [setCampaigns]);
+
   return {
     campaigns,
-    setCampaigns, // Expose setCampaigns for initial load/reset logic in ChatProvider
+    setCampaigns,
     isCampaignsLoaded,
     addCampaign,
     updateCampaign,
@@ -395,5 +438,6 @@ export function useCampaigns() {
     addHouseRule,
     updateHouseRule,
     deleteHouseRule,
+    populateCampaignFromAI, // Export the new function
   };
 }
