@@ -41,10 +41,19 @@ export function ChatWindow() {
     }
   }, [messages, isThinking]);
 
+  // This is the corrected useEffect to prevent infinite loops.
+  // It only resets the speaker if the currently selected character is removed from the campaign.
   useEffect(() => {
-    // Reset speaker to DM if the list of characters changes
-    setActiveSpeakerId('dm');
-  }, [playerCharacters]);
+    // If the active speaker is a player character...
+    if (activeSpeakerId !== 'dm') {
+      // ...check if that character still exists in the list.
+      const speakerExists = playerCharacters.some(pc => pc.id === activeSpeakerId);
+      // If the character has been removed, reset the speaker to the default (Narrator).
+      if (!speakerExists) {
+        setActiveSpeakerId('dm');
+      }
+    }
+  }, [playerCharacters, activeSpeakerId]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
