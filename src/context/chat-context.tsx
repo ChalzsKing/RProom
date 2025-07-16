@@ -4,7 +4,7 @@ import React, { createContext, useState, useContext, ReactNode, useEffect, useCa
 import { LoadingScreen } from '@/components/loading-screen';
 import { useCampaigns } from '@/hooks/use-campaigns';
 import { useNarrators } from '@/hooks/use-narrators';
-import { useChatHistory } = '@/hooks/use-chat-history';
+import { useChatHistory } from '@/hooks/use-chat-history'; // Corrected this line
 import { useSceneStates } from '@/hooks/use-scene-states';
 
 // Type Definitions (assuming these are already defined correctly elsewhere or will be added)
