@@ -54,6 +54,9 @@ const defaultCampaigns: Campaign[] = [
   },
 ];
 
+// Helper for unique IDs
+const generateUniqueId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+
 export function useCampaigns() {
   const [campaigns, setCampaigns, isCampaignsLoaded] = useLocalStorage<Campaign[]>(CAMPAIGNS_STORAGE_KEY, defaultCampaigns);
 
@@ -65,7 +68,7 @@ export function useCampaigns() {
   // --- Campaign Management ---
   const addCampaign = useCallback((campaignName: string) => {
     const newCampaign: Campaign = { 
-      id: `campaign-${Date.now()}`, 
+      id: generateUniqueId('campaign'), 
       name: campaignName, 
       worldDescription: '', 
       uniqueFeatures: '', 
@@ -102,7 +105,7 @@ export function useCampaigns() {
 
   // --- Adventure Management ---
   const addAdventure = useCallback((campaignId: string, adventureData: { name: string; premise: string }) => {
-    const newAdventure: Adventure = { ...adventureData, id: `adventure-${Date.now()}`, sessions: [] };
+    const newAdventure: Adventure = { ...adventureData, id: generateUniqueId('adventure'), sessions: [] };
     setCampaigns(prev =>
       prev.map(c => c.id === campaignId ? { ...c, adventures: [...c.adventures, newAdventure] } : c)
     );
@@ -123,7 +126,7 @@ export function useCampaigns() {
 
   // --- Session Management ---
   const addSession = useCallback((adventureId: string, sessionName: string) => {
-    const newSession: Session = { id: `session-${Date.now()}`, name: sessionName };
+    const newSession: Session = { id: generateUniqueId('session'), name: sessionName };
     setCampaigns(prev =>
       prev.map(c => ({
         ...c,
@@ -138,7 +141,7 @@ export function useCampaigns() {
 
   // --- Player Character Management ---
   const addPlayerCharacter = useCallback((campaignId: string, pcData: Omit<PlayerCharacter, 'id'>) => {
-    const newPc: PlayerCharacter = { ...pcData, id: `pc-${Date.now()}` };
+    const newPc: PlayerCharacter = { ...pcData, id: generateUniqueId('pc') };
     setCampaigns(prev => prev.map(c => 
       c.id === campaignId 
         ? { ...c, playerCharacters: [...c.playerCharacters, newPc] } 
@@ -158,7 +161,7 @@ export function useCampaigns() {
 
   // --- Non-Player Character (Adventure-specific) Management ---
   const addNonPlayerCharacter = useCallback((campaignId: string, npcData: Omit<NonPlayerCharacter, 'id'>) => {
-    const newNpc: NonPlayerCharacter = { ...npcData, id: `npc-${Date.now()}` };
+    const newNpc: NonPlayerCharacter = { ...npcData, id: generateUniqueId('npc') };
     setCampaigns(prev => prev.map(c => 
       c.id === campaignId 
         ? { ...c, nonPlayerCharacters: [...c.nonPlayerCharacters, newNpc] } 
@@ -187,7 +190,7 @@ export function useCampaigns() {
 
   // --- Campaign NPC (Recurrent) Management ---
   const addCampaignNpc = useCallback((campaignId: string, npcData: Omit<NonPlayerCharacter, 'id'>) => {
-    const newNpc: NonPlayerCharacter = { ...npcData, id: `cnpc-${Date.now()}` };
+    const newNpc: NonPlayerCharacter = { ...npcData, id: generateUniqueId('cnpc') };
     setCampaigns(prev => prev.map(c => 
       c.id === campaignId 
         ? { ...c, campaignNpcs: [...c.campaignNpcs, newNpc] } 
@@ -216,7 +219,7 @@ export function useCampaigns() {
 
   // --- Location Management ---
   const addLocation = useCallback((campaignId: string, locationData: Omit<Location, 'id'>) => {
-    const newLocation: Location = { ...locationData, id: `loc-${Date.now()}` };
+    const newLocation: Location = { ...locationData, id: generateUniqueId('loc') };
     setCampaigns(prev => prev.map(c => 
       c.id === campaignId 
         ? { ...c, locations: [...c.locations, newLocation] } 
@@ -245,7 +248,7 @@ export function useCampaigns() {
 
   // --- Faction Management ---
   const addFaction = useCallback((campaignId: string, factionData: Omit<Faction, 'id'>) => {
-    const newFaction: Faction = { ...factionData, id: `fac-${Date.now()}` };
+    const newFaction: Faction = { ...factionData, id: generateUniqueId('fac') };
     setCampaigns(prev => prev.map(c => 
       c.id === campaignId 
         ? { ...c, factions: [...c.factions, newFaction] } 
@@ -274,7 +277,7 @@ export function useCampaigns() {
 
   // --- Glossary Term Management ---
   const addGlossaryTerm = useCallback((campaignId: string, termData: Omit<GlossaryTerm, 'id'>) => {
-    const newTerm: GlossaryTerm = { ...termData, id: `term-${Date.now()}` };
+    const newTerm: GlossaryTerm = { ...termData, id: generateUniqueId('term') };
     setCampaigns(prev => prev.map(c => 
       c.id === campaignId 
         ? { ...c, glossary: [...c.glossary, newTerm] } 
@@ -303,7 +306,7 @@ export function useCampaigns() {
 
   // --- Important Item Management ---
   const addImportantItem = useCallback((campaignId: string, itemData: Omit<ImportantItem, 'id'>) => {
-    const newItem: ImportantItem = { ...itemData, id: `item-${Date.now()}` };
+    const newItem: ImportantItem = { ...itemData, id: generateUniqueId('item') };
     setCampaigns(prev => prev.map(c => 
       c.id === campaignId 
         ? { ...c, importantItems: [...c.importantItems, newItem] } 
@@ -332,7 +335,7 @@ export function useCampaigns() {
 
   // --- House Rule Management ---
   const addHouseRule = useCallback((campaignId: string, ruleData: Omit<HouseRule, 'id'>) => {
-    const newRule: HouseRule = { ...ruleData, id: `rule-${Date.now()}` };
+    const newRule: HouseRule = { ...ruleData, id: generateUniqueId('rule') };
     setCampaigns(prev => prev.map(c => 
       c.id === campaignId 
         ? { ...c, houseRules: [...c.houseRules, newRule] } 
