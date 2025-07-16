@@ -362,61 +362,36 @@ export function useCampaigns() {
     toast.success('Regla eliminada.');
   }, [setCampaigns]);
 
-  // --- NEW ATOMIC FUNCTION ---
+  // --- ATOMIC FUNCTION FOR AI WORLD GENERATION ---
   const populateCampaignFromAI = useCallback((campaignId: string, worldData: any) => {
     setCampaigns(prev => 
       prev.map(c => {
         if (c.id === campaignId) {
-          const newCampaign = { ...c };
+          // Create a new campaign object to ensure immutability
+          const updatedCampaign = {
+            ...c,
+            worldDescription: worldData.worldDescription || c.worldDescription,
+            uniqueFeatures: worldData.uniqueFeatures || c.uniqueFeatures,
+          };
 
-          // Overwrite descriptions
-          newCampaign.worldDescription = worldData.worldDescription || newCampaign.worldDescription;
-          newCampaign.uniqueFeatures = worldData.uniqueFeatures || newCampaign.uniqueFeatures;
+          // Helper to create new items with unique IDs
+          const createNewItems = <T,>(data: any[], prefix: string): T[] => {
+            if (data && Array.isArray(data)) {
+              return data.map((item: Omit<T, 'id'>) => ({ ...item, id: generateUniqueId(prefix) } as T));
+            }
+            return [];
+          };
 
-          // Add new items
-          if (worldData.campaignNpcs && Array.isArray(worldData.campaignNpcs)) {
-            const newNpcs = worldData.campaignNpcs.map((npc: Omit<NonPlayerCharacter, 'id'>) => ({
-              ...npc, id: generateUniqueId('cnpc')
-            }));
-            newCampaign.campaignNpcs.push(...newNpcs);
-          }
-          if (worldData.locations && Array.isArray(worldData.locations)) {
-            const newLocations = worldData.locations.map((loc: Omit<Location, 'id'>) => ({
-              ...loc, id: generateUniqueId('loc')
-            }));
-            newCampaign.locations.push(...newLocations);
-          }
-          if (worldData.factions && Array.isArray(worldData.factions)) {
-            const newFactions = worldData.factions.map((fac: Omit<Faction, 'id'>) => ({
-              ...fac, id: generateUniqueId('fac')
-            }));
-            newCampaign.factions.push(...newFactions);
-          }
-          if (worldData.glossary && Array.isArray(worldData.glossary)) {
-            const newTerms = worldData.glossary.map((term: Omit<GlossaryTerm, 'id'>) => ({
-              ...term, id: generateUniqueId('term')
-            }));
-            newCampaign.glossary.push(...newTerms);
-          }
-          if (worldData.importantItems && Array.isArray(worldData.importantItems)) {
-            const newItems = worldData.importantItems.map((item: Omit<ImportantItem, 'id'>) => ({
-              ...item, id: generateUniqueId('item')
-            }));
-            newCampaign.importantItems.push(...newItems);
-          }
-          if (worldData.houseRules && Array.isArray(worldData.houseRules)) {
-            const newRules = worldData.houseRules.map((rule: Omit<HouseRule, 'id'>) => ({
-              ...rule, id: generateUniqueId('rule')
-            }));
-            newCampaign.houseRules.push(...newRules);
-          }
-          if (worldData.adventures && Array.isArray(worldData.adventures)) {
-            const newAdventures = worldData.adventures.map((adv: { name: string; premise: string }) => ({
-              ...adv, id: generateUniqueId('adventure'), sessions: []
-            }));
-            newCampaign.adventures.push(...newAdventures);
-          }
-          return newCampaign;
+          // Create new arrays by combining old and new items
+          updatedCampaign.campaignNpcs = [...c.campaignNpcs, ...createNewItems<NonPlayerCharacter>(worldData.campaignNpcs, 'cnpc')];
+          updatedCampaign.locations = [...c.locations, ...createNewItems<Location>(worldData.locations, 'loc')];
+          updatedCampaign.factions = [...c.factions, ...createNewItems<Faction>(worldData.factions, 'fac')];
+          updatedCampaign.glossary = [...c.glossary, ...createNewItems<GlossaryTerm>(worldData.glossary, 'term')];
+          updatedCampaign.importantItems = [...c.importantItems, ...createNewItems<ImportantItem>(worldData.importantItems, 'item')];
+          updatedCampaign.houseRules = [...c.houseRules, ...createNewItems<HouseRule>(worldData.houseRules, 'rule')];
+          updatedCampaign.adventures = [...c.adventures, ...createNewItems<Adventure>(worldData.adventures, 'adventure')];
+          
+          return updatedCampaign;
         }
         return c;
       })
@@ -456,6 +431,6 @@ export function useCampaigns() {
     addHouseRule,
     updateHouseRule,
     deleteHouseRule,
-    populateCampaignFromAI, // Export the new function
+    populateCampaignFromAI,
   };
 }
