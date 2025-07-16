@@ -4,10 +4,165 @@ import React, { createContext, useState, useContext, ReactNode, useEffect, useCa
 import { LoadingScreen } from '@/components/loading-screen';
 import { useCampaigns } from '@/hooks/use-campaigns';
 import { useNarrators } from '@/hooks/use-narrators';
-import { useChatHistory } from '@/hooks/use-chat-history';
+import { useChatHistory } = '@/hooks/use-chat-history';
 import { useSceneStates } from '@/hooks/use-scene-states';
 
-// ... (type definitions remain unchanged) ...
+// Type Definitions (assuming these are already defined correctly elsewhere or will be added)
+export interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  authorId: string; // ID of the speaker (narrator, PC, NPC)
+  authorName: string; // Name of the speaker
+}
+
+export interface Narrator {
+  id: string;
+  name: string;
+  description: string;
+  systemPrompt: string;
+  temperature: number;
+  maxLength: number;
+  tone: string;
+}
+
+export interface Session {
+  id: string;
+  name: string;
+}
+
+export interface PlayerCharacter {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface NonPlayerCharacter {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface Adventure {
+  id: string;
+  name: string;
+  premise: string;
+  sessions: Session[];
+}
+
+export interface Location {
+  id: string;
+  name: string;
+  type: string;
+  description: string;
+}
+
+export interface Faction {
+  id: string;
+  name: string;
+  description: string;
+  keyLeaders?: string;
+  relationships?: string;
+}
+
+export interface GlossaryTerm {
+  id: string;
+  term: string;
+  definition: string;
+}
+
+export interface ImportantItem {
+  id: string;
+  name: string;
+  description: string;
+  properties?: string;
+}
+
+export interface HouseRule {
+  id: string;
+  title: string;
+  rule: string;
+}
+
+export type SceneControl = 'player' | 'ai' | 'absent';
+export type SceneStates = Record<string, Record<string, SceneControl>>; // sessionId -> characterId -> control
+
+export interface Campaign {
+  id: string;
+  name: string;
+  worldDescription: string;
+  uniqueFeatures?: string;
+  worldTone: string;
+  adventures: Adventure[];
+  playerCharacters: PlayerCharacter[];
+  nonPlayerCharacters: NonPlayerCharacter[]; // Adventure-specific NPCs
+  campaignNpcs: NonPlayerCharacter[]; // Campaign-wide NPCs
+  locations: Location[];
+  factions: Faction[];
+  glossary: GlossaryTerm[];
+  importantItems: ImportantItem[];
+  houseRules: HouseRule[];
+}
+
+interface ChatContextType {
+  activeProvider: string;
+  setActiveProvider: (provider: string) => void;
+  campaigns: Campaign[];
+  addCampaign: (name: string) => void;
+  updateCampaign: (campaignId: string, campaignData: Partial<Omit<Campaign, 'id' | 'adventures' | 'playerCharacters' | 'nonPlayerCharacters' | 'locations' | 'factions' | 'glossary' | 'importantItems' | 'houseRules'>>) => void;
+  deleteCampaign: (campaignId: string) => void;
+  activeSessionId: string | null;
+  setActiveSessionId: (sessionId: string | null) => void;
+  messages: Message[];
+  addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => void;
+  clearMessages: () => void;
+  narrators: Narrator[];
+  activeNarrator: Narrator;
+  setActiveNarrator: (narratorId: string) => void;
+  addNarrator: (narratorData: Omit<Narrator, 'id'>) => void;
+  updateNarrator: (narratorId: string, narratorData: Omit<Narrator, 'id'>) => void;
+  playerCharacters: PlayerCharacter[];
+  addPlayerCharacter: (campaignId: string, pcData: Omit<PlayerCharacter, 'id'>) => void;
+  updatePlayerCharacter: (campaignId: string, pcId: string, pcData: Omit<PlayerCharacter, 'id'>) => void;
+  nonPlayerCharacters: NonPlayerCharacter[];
+  addNonPlayerCharacter: (campaignId: string, npcData: Omit<NonPlayerCharacter, 'id'>) => void;
+  updateNonPlayerCharacter: (campaignId: string, npcId: string, npcData: Omit<NonPlayerCharacter, 'id'>) => void;
+  deleteNonPlayerCharacter: (campaignId: string, npcId: string) => void;
+  campaignNpcs: NonPlayerCharacter[];
+  addCampaignNpc: (campaignId: string, npcData: Omit<NonPlayerCharacter, 'id'>) => void;
+  updateCampaignNpc: (campaignId: string, npcId: string, npcData: Omit<NonPlayerCharacter, 'id'>) => void;
+  deleteCampaignNpc: (campaignId: string, npcId: string) => void;
+  locations: Location[];
+  addLocation: (campaignId: string, locationData: Omit<Location, 'id'>) => void;
+  updateLocation: (campaignId: string, locationId: string, locationData: Omit<Location, 'id'>) => void;
+  deleteLocation: (campaignId: string, locationId: string) => void;
+  factions: Faction[];
+  addFaction: (campaignId: string, factionData: Omit<Faction, 'id'>) => void;
+  updateFaction: (campaignId: string, factionId: string, factionData: Omit<Faction, 'id'>) => void;
+  deleteFaction: (campaignId: string, factionId: string) => void;
+  glossary: GlossaryTerm[];
+  addGlossaryTerm: (campaignId: string, termData: Omit<GlossaryTerm, 'id'>) => void;
+  updateGlossaryTerm: (campaignId: string, termId: string, termData: Omit<GlossaryTerm, 'id'>) => void;
+  deleteGlossaryTerm: (campaignId: string, termId: string) => void;
+  importantItems: ImportantItem[];
+  addImportantItem: (campaignId: string, itemData: Omit<ImportantItem, 'id'>) => void;
+  updateImportantItem: (campaignId: string, itemId: string, itemData: Omit<ImportantItem, 'id'>) => void;
+  deleteImportantItem: (campaignId: string, itemId: string) => void;
+  houseRules: HouseRule[];
+  addHouseRule: (campaignId: string, ruleData: Omit<HouseRule, 'id'>) => void;
+  updateHouseRule: (campaignId: string, ruleId: string, ruleData: Omit<HouseRule, 'id'>) => void;
+  deleteHouseRule: (campaignId: string, ruleId: string) => void;
+  addAdventure: (campaignId: string, adventureData: { name: string; premise: string }) => void;
+  updateAdventure: (adventureId: string, adventureData: Omit<Adventure, 'id' | 'sessions'>) => void;
+  addSession: (adventureId: string, sessionName: string) => Session;
+  getCampaignById: (campaignId: string) => Campaign | undefined;
+  getActiveCampaign: () => Campaign | undefined;
+  getActiveAdventure: () => Adventure | undefined;
+  getActiveSession: () => Session | undefined;
+  sceneStates: SceneStates;
+  updateSceneState: (sessionId: string, characterId: string, control: SceneControl) => void;
+}
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
@@ -56,6 +211,70 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   // Combine all loaded states
   const isLoaded = isCampaignsLoaded && isNarratorsLoaded && isChatHistoryLoaded && isSceneStatesLoaded;
 
+  // Helper functions to get active entities
+  const getCampaignById = useCallback((campaignId: string) => {
+    return campaigns.find(c => c.id === campaignId);
+  }, [campaigns]);
+
+  const getActiveCampaign = useCallback(() => {
+    if (!activeSessionId) return undefined;
+    for (const campaign of campaigns) {
+      for (const adventure of campaign.adventures) {
+        if (adventure.sessions.some(s => s.id === activeSessionId)) {
+          return campaign;
+        }
+      }
+    }
+    return undefined;
+  }, [activeSessionId, campaigns]);
+
+  const getActiveAdventure = useCallback(() => {
+    if (!activeSessionId) return undefined;
+    const activeCampaign = getActiveCampaign();
+    if (!activeCampaign) return undefined;
+    for (const adventure of activeCampaign.adventures) {
+      if (adventure.sessions.some(s => s.id === activeSessionId)) {
+        return adventure;
+      }
+    }
+    return undefined;
+  }, [activeSessionId, getActiveCampaign]);
+
+  const getActiveSession = useCallback(() => {
+    if (!activeSessionId) return undefined;
+    const activeAdventure = getActiveAdventure();
+    if (!activeAdventure) return undefined;
+    return activeAdventure.sessions.find(s => s.id === activeSessionId);
+  }, [activeSessionId, getActiveAdventure]);
+
+  // Messages for the active session
+  const messages = getMessagesForSession(activeSessionId);
+
+  // Wrapped addMessage and clearMessages to pass activeSessionId
+  const addMessage = useCallback((message: Omit<Message, 'id' | 'timestamp'>) => {
+    if (activeSessionId) {
+      addMessageHook(activeSessionId, message);
+    }
+  }, [activeSessionId, addMessageHook]);
+
+  const clearMessages = useCallback(() => {
+    if (activeSessionId && activeNarrator) {
+      clearMessagesHook(activeSessionId, activeNarrator);
+    }
+  }, [activeSessionId, activeNarrator, clearMessagesHook]);
+
+  // Handle campaign deletion and associated chat history cleanup
+  const deleteCampaign = useCallback((campaignId: string) => {
+    const sessionIdsToDelete = deleteCampaignHook(campaignId);
+    if (sessionIdsToDelete && sessionIdsToDelete.length > 0) {
+      deleteSessionHistory(sessionIdsToDelete);
+      // If the active session was part of the deleted campaign, clear it
+      if (activeSessionId && sessionIdsToDelete.includes(activeSessionId)) {
+        setActiveSessionId(null);
+      }
+    }
+  }, [deleteCampaignHook, deleteSessionHistory, activeSessionId]);
+
   // Initialize active session and chat history
   useEffect(() => {
     if (isLoaded && !initializedRef.current) {
@@ -72,15 +291,77 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [isLoaded, campaigns, activeSessionId, activeNarrator, initializeSessionHistory]);
 
-  // ... (rest of the component remains unchanged, including all useCallbacks and derived values) ...
-
   if (!isLoaded || !activeNarrator) {
     return <LoadingScreen />;
   }
 
+  // Get player characters and campaign NPCs for the active campaign
+  const activeCampaign = getActiveCampaign();
+  const playerCharacters = activeCampaign?.playerCharacters || [];
+  const nonPlayerCharacters = activeCampaign?.nonPlayerCharacters || [];
+  const campaignNpcs = activeCampaign?.campaignNpcs || [];
+  const locations = activeCampaign?.locations || [];
+  const factions = activeCampaign?.factions || [];
+  const glossary = activeCampaign?.glossary || [];
+  const importantItems = activeCampaign?.importantItems || [];
+  const houseRules = activeCampaign?.houseRules || [];
+
   return (
     <ChatContext.Provider value={{
-      // ... (provider value remains unchanged) ...
+      activeProvider,
+      setActiveProvider,
+      campaigns,
+      addCampaign,
+      updateCampaign,
+      deleteCampaign,
+      activeSessionId,
+      setActiveSessionId,
+      messages,
+      addMessage,
+      clearMessages,
+      narrators,
+      activeNarrator,
+      setActiveNarrator,
+      playerCharacters,
+      addPlayerCharacter,
+      updatePlayerCharacter,
+      nonPlayerCharacters,
+      addNonPlayerCharacter,
+      updateNonPlayerCharacter,
+      deleteNonPlayerCharacter,
+      campaignNpcs,
+      addCampaignNpc,
+      updateCampaignNpc,
+      deleteCampaignNpc,
+      locations,
+      addLocation,
+      updateLocation,
+      deleteLocation,
+      factions,
+      addFaction,
+      updateFaction,
+      deleteFaction,
+      glossary,
+      addGlossaryTerm,
+      updateGlossaryTerm,
+      deleteGlossaryTerm,
+      importantItems,
+      addImportantItem,
+      updateImportantItem,
+      deleteImportantItem,
+      houseRules,
+      addHouseRule,
+      updateHouseRule,
+      deleteHouseRule,
+      addAdventure,
+      updateAdventure,
+      addSession,
+      getCampaignById,
+      getActiveCampaign,
+      getActiveAdventure,
+      getActiveSession,
+      sceneStates,
+      updateSceneState,
     }}>
       {children}
     </ChatContext.Provider>
