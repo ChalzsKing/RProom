@@ -68,12 +68,12 @@ const worldTones = [
 export function CampaignManager({ campaign, children }: CampaignManagerProps) {
   const { 
     updateCampaign, 
-    campaignNpcs, deleteCampaignNpc,
-    locations, deleteLocation,
-    factions, deleteFaction,
-    glossary, deleteGlossaryTerm,
-    importantItems, deleteImportantItem,
-    houseRules, deleteHouseRule,
+    deleteCampaignNpc,
+    deleteLocation,
+    deleteFaction,
+    deleteGlossaryTerm,
+    deleteImportantItem,
+    deleteHouseRule,
     populateCampaignFromAI,
   } = useChat();
   const [open, setOpen] = useState(false);
@@ -325,11 +325,11 @@ export function CampaignManager({ campaign, children }: CampaignManagerProps) {
                 </Button>
               </ManageNpcs>
             </div>
-            {campaignNpcs.length === 0 ? (
+            {campaign.campaignNpcs.length === 0 ? (
               <p className="text-muted-foreground text-center py-8">No hay PNJs recurrentes en esta campaña. Añade algunos para que la IA los recuerde.</p>
             ) : (
               <div className="space-y-2">
-                {campaignNpcs.map((npc) => (
+                {campaign.campaignNpcs.map((npc) => (
                   <div key={npc.id} className="flex items-center justify-between rounded-md p-3 bg-secondary/50 border border-border">
                     <div className="flex items-center gap-3">
                       <Bot className="h-4 w-4 text-muted-foreground" />
@@ -366,11 +366,11 @@ export function CampaignManager({ campaign, children }: CampaignManagerProps) {
                 </Button>
               </ManageLocation>
             </div>
-            {locations.length === 0 ? (
+            {campaign.locations.length === 0 ? (
               <p className="text-muted-foreground text-center py-8">No hay localizaciones en esta campaña. Añade algunas para que la IA las recuerde.</p>
             ) : (
               <div className="space-y-2">
-                {locations.map((loc) => (
+                {campaign.locations.map((loc) => (
                   <div key={loc.id} className="flex items-center justify-between rounded-md p-3 bg-secondary/50 border border-border">
                     <div className="flex items-center gap-3">
                       <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -407,11 +407,11 @@ export function CampaignManager({ campaign, children }: CampaignManagerProps) {
                 </Button>
               </ManageFaction>
             </div>
-            {factions.length === 0 ? (
+            {campaign.factions.length === 0 ? (
               <p className="text-muted-foreground text-center py-8">No hay facciones en esta campaña. Añade algunas para que la IA las recuerde.</p>
             ) : (
               <div className="space-y-2">
-                {factions.map((fac) => (
+                {campaign.factions.map((fac) => (
                   <div key={fac.id} className="flex items-center justify-between rounded-md p-3 bg-secondary/50 border border-border">
                     <div className="flex items-center gap-3">
                       <Users className="h-4 w-4 text-muted-foreground" />
@@ -450,11 +450,11 @@ export function CampaignManager({ campaign, children }: CampaignManagerProps) {
                 </Button>
               </ManageGlossaryTerm>
             </div>
-            {glossary.length === 0 ? (
+            {campaign.glossary.length === 0 ? (
               <p className="text-muted-foreground text-center py-4">No hay términos en el glosario.</p>
             ) : (
               <div className="space-y-2 mb-6">
-                {glossary.map((term) => (
+                {campaign.glossary.map((term) => (
                   <div key={term.id} className="flex items-center justify-between rounded-md p-3 bg-secondary/50 border border-border">
                     <div className="flex items-center gap-3">
                       <Book className="h-4 w-4 text-muted-foreground" />
@@ -489,11 +489,11 @@ export function CampaignManager({ campaign, children }: CampaignManagerProps) {
                 </Button>
               </ManageImportantItem>
             </div>
-            {importantItems.length === 0 ? (
+            {campaign.importantItems.length === 0 ? (
               <p className="text-muted-foreground text-center py-4">No hay objetos importantes.</p>
             ) : (
               <div className="space-y-2 mb-6">
-                {importantItems.map((item) => (
+                {campaign.importantItems.map((item) => (
                   <div key={item.id} className="flex items-center justify-between rounded-md p-3 bg-secondary/50 border border-border">
                     <div className="flex items-center gap-3">
                       <Gem className="h-4 w-4 text-muted-foreground" />
@@ -528,11 +528,11 @@ export function CampaignManager({ campaign, children }: CampaignManagerProps) {
                 </Button>
               </ManageHouseRule>
             </div>
-            {houseRules.length === 0 ? (
+            {campaign.houseRules.length === 0 ? (
               <p className="text-muted-foreground text-center py-4">No hay reglas de la casa.</p>
             ) : (
               <div className="space-y-2">
-                {houseRules.map((rule) => (
+                {campaign.houseRules.map((rule) => (
                   <div key={rule.id} className="flex items-center justify-between rounded-md p-3 bg-secondary/50 border border-border">
                     <div className="flex items-center gap-3">
                       <ScrollText className="h-4 w-4 text-muted-foreground" />
