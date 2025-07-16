@@ -136,6 +136,21 @@ export function useCampaigns() {
     toast.success(`Personaje "${pcData.name}" actualizado.`);
   }, [setCampaigns]);
 
+  const deletePlayerCharacter = useCallback((campaignId: string, pcId: string) => {
+    setCampaigns(prev =>
+      prev.map(campaign => {
+        if (campaign.id === campaignId) {
+          return {
+            ...campaign,
+            playerCharacters: (campaign.playerCharacters || []).filter(pc => pc.id !== pcId),
+          };
+        }
+        return campaign;
+      })
+    );
+    toast.info(`Personaje eliminado.`);
+  }, [setCampaigns]);
+
   const addNonPlayerCharacter = useCallback((campaignId: string, npcData: Omit<NonPlayerCharacter, 'id'>) => {
     setCampaigns(prev =>
       prev.map(campaign => {
@@ -486,6 +501,7 @@ export function useCampaigns() {
     addSession,
     addPlayerCharacter,
     updatePlayerCharacter,
+    deletePlayerCharacter, // Added this
     addNonPlayerCharacter,
     updateNonPlayerCharacter,
     deleteNonPlayerCharacter,

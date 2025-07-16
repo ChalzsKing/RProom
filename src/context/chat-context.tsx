@@ -125,6 +125,7 @@ interface ChatContextType {
   playerCharacters: PlayerCharacter[];
   addPlayerCharacter: (campaignId: string, pcData: Omit<PlayerCharacter, 'id'>) => void;
   updatePlayerCharacter: (campaignId: string, pcId: string, pcData: Omit<PlayerCharacter, 'id'>) => void;
+  deletePlayerCharacter: (campaignId: string, pcId: string) => void; // Added this
   nonPlayerCharacters: NonPlayerCharacter[];
   addNonPlayerCharacter: (campaignId: string, npcData: Omit<NonPlayerCharacter, 'id'>) => void;
   updateNonPlayerCharacter: (campaignId: string, npcId: string, npcData: Omit<NonPlayerCharacter, 'id'>) => void;
@@ -183,7 +184,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     campaigns, setCampaigns, isCampaignsLoaded,
     addCampaign, updateCampaign, deleteCampaign: deleteCampaignHook, 
     addAdventure, updateAdventure, addSession,
-    addPlayerCharacter, updatePlayerCharacter,
+    addPlayerCharacter, updatePlayerCharacter, deletePlayerCharacter, // Added deletePlayerCharacter
     addNonPlayerCharacter, updateNonPlayerCharacter, deleteNonPlayerCharacter,
     addCampaignNpc, updateCampaignNpc, deleteCampaignNpc,
     addLocation, updateLocation, deleteLocation,
@@ -329,6 +330,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       playerCharacters,
       addPlayerCharacter,
       updatePlayerCharacter,
+      deletePlayerCharacter, // Added this
       nonPlayerCharacters,
       addNonPlayerCharacter,
       updateNonPlayerCharacter,

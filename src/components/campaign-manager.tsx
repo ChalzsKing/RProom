@@ -29,7 +29,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, Bot, MapPin, Users, Book, Gem, ScrollText, Briefcase, Sparkles, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Bot, MapPin, Users, Book, Gem, ScrollText, Briefcase, Sparkles, Loader2, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { ManageNpcs } from './manage-npcs';
 import { ManageLocation } from './manage-location';
@@ -38,6 +38,7 @@ import { ManageGlossaryTerm } from './manage-glossary-term';
 import { ManageImportantItem } from './manage-important-item';
 import { ManageHouseRule } from './manage-house-rule';
 import { ManageAdventure } from './manage-adventure';
+import { ManagePcs } from './manage-pcs'; // Import ManagePcs
 import { Label } from './ui/label';
 
 const campaignSchema = z.object({
@@ -74,6 +75,7 @@ export function CampaignManager({ campaign, children }: CampaignManagerProps) {
     deleteGlossaryTerm,
     deleteImportantItem,
     deleteHouseRule,
+    deletePlayerCharacter, // Added this
     populateCampaignFromAI,
   } = useChat();
   const [open, setOpen] = useState(false);
@@ -182,6 +184,12 @@ export function CampaignManager({ campaign, children }: CampaignManagerProps) {
     }
   };
 
+  const handleDeletePc = (pcId: string) => {
+    if (window.confirm('¿Estás seguro de que quieres eliminar este Personaje Jugador?')) {
+      deletePlayerCharacter(campaign.id, pcId);
+    }
+  };
+
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>{children}</SheetTrigger>
@@ -196,11 +204,12 @@ export function CampaignManager({ campaign, children }: CampaignManagerProps) {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col py-4">
           <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
             <TabsTrigger value="general">General</TabsTrigger>
+            <TabsTrigger value="pcs">Personajes</TabsTrigger> {/* New tab */}
             <TabsTrigger value="npcs">PNJs</TabsTrigger>
             <TabsTrigger value="locations">Lugares</TabsTrigger>
             <TabsTrigger value="factions">Facciones</TabsTrigger>
             <TabsTrigger value="resources">Recursos</TabsTrigger>
-            <TabsTrigger value="adventures">Aventuras</TabsTrigger>
+            {/* <TabsTrigger value="adventures">Aventuras</TabsTrigger> // Adventures are managed from sidebar */}
           </TabsList>
 
           <TabsContent value="general" className="flex-1 overflow-y-auto pr-4 mt-4 space-y-6">
@@ -313,6 +322,47 @@ export function CampaignManager({ campaign, children }: CampaignManagerProps) {
                 </SheetFooter>
               </form>
             </Form>
+          </TabsContent>
+
+          <TabsContent value="pcs" className="flex-1 overflow-y-auto pr-4 mt-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Personajes Jugadores</h3>
+              <ManagePcs campaignId={campaign.id}>
+                <Button variant="outline" size="sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Añadir Personaje
+                </Button>
+              </ManagePcs>
+            </div>
+            {(campaign.playerCharacters && campaign.playerCharacters.length > 0) ? (
+              <div className="space-y-2">
+                {campaign.playerCharacters.map((pc) => (
+                  <div key={pc.id} className="flex items-center justify-between rounded-md p-3 bg-secondary/50 border border-border">
+                    <div className="flex items-center gap-3">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">{pc.name}</p>
+                        <p className="text-sm text-muted-foreground line-clamp-1">{pc.description}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <ManagePcs pc={pc} campaignId={campaign.id}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Pencil className="h-4 w-4" />
+                          <span className="sr-only">Editar Personaje</span>
+                        </Button>
+                      </ManagePcs>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeletePc(pc.id)}>
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Eliminar Personaje</span>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-center py-8">No hay personajes jugadores en esta campaña. Añade algunos para empezar la aventura.</p>
+            )}
           </TabsContent>
 
           <TabsContent value="npcs" className="flex-1 overflow-y-auto pr-4 mt-4">
@@ -559,7 +609,8 @@ export function CampaignManager({ campaign, children }: CampaignManagerProps) {
             )}
           </TabsContent>
 
-          <TabsContent value="adventures" className="flex-1 overflow-y-auto pr-4 mt-4">
+          {/* Removed the adventures tab from here as it's managed from the sidebar */}
+          {/* <TabsContent value="adventures" className="flex-1 overflow-y-auto pr-4 mt-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Aventuras de la Campaña</h3>
               <ManageAdventure campaignId={campaign.id}>
@@ -587,7 +638,6 @@ export function CampaignManager({ campaign, children }: CampaignManagerProps) {
                           <span className="sr-only">Editar Aventura</span>
                         </Button>
                       </ManageAdventure>
-                      {/* No hay deleteAdventure en el contexto, se podría añadir si es necesario */}
                     </div>
                   </div>
                 ))}
@@ -595,7 +645,7 @@ export function CampaignManager({ campaign, children }: CampaignManagerProps) {
             ) : (
               <p className="text-muted-foreground text-center py-8">No hay aventuras en esta campaña. ¡Crea una para empezar!</p>
             )}
-          </TabsContent>
+          </TabsContent> */}
         </Tabs>
       </SheetContent>
     </Sheet>
