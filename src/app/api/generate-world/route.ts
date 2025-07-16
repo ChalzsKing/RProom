@@ -3,7 +3,11 @@ import { NextResponse } from 'next/server';
 const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
 
 async function callApi(apiKey: string, prompt: string) {
-  const system_prompt = `Eres un asistente de creación de mundos para un juego de rol. Basado en la idea del usuario, genera un mundo completo y coherente. Tu respuesta DEBE ser un único objeto JSON válido con la siguiente estructura y sin texto adicional ni marcadores de bloque de código:
+  const system_prompt = `Eres un asistente de creación de mundos para un juego de rol. Basado en la idea del usuario, genera un mundo completo y coherente. Tu respuesta DEBE ser un único objeto JSON válido.
+
+Es crucial que generes exactamente 3 elementos para cada una de las siguientes listas: \`campaignNpcs\`, \`locations\`, \`factions\`, \`glossary\`, \`importantItems\`, \`houseRules\`, y \`adventures\`.
+
+La estructura del JSON debe ser la siguiente, sin texto adicional ni marcadores de bloque de código:
 {
   "worldDescription": "Una descripción rica y evocadora del mundo (2-3 párrafos).",
   "uniqueFeatures": "Una lista de 2-3 características o leyes únicas que definen el mundo (ej: 'La magia es salvaje e impredecible', 'No existen los metales', 'Los sueños tienen poder físico').",
@@ -15,23 +19,27 @@ async function callApi(apiKey: string, prompt: string) {
   "locations": [
     { "name": "Nombre del Lugar 1", "type": "Ciudad/Ruina/Región...", "description": "Descripción del Lugar 1." },
     { "name": "Nombre del Lugar 2", "type": "Ciudad/Ruina/Región...", "description": "Descripción del Lugar 2." },
-    { "name": "Nombre del Lugar 3", "type": "Ciudad/Ruina/Región...", "description": "Descripción del Lugar 3." },
-    { "name": "Nombre del Lugar 4", "type": "Ciudad/Ruina/Región...", "description": "Descripción del Lugar 4." }
+    { "name": "Nombre del Lugar 3", "type": "Ciudad/Ruina/Región...", "description": "Descripción del Lugar 3." }
   ],
   "factions": [
     { "name": "Nombre de la Facción 1", "description": "Descripción de sus objetivos, ideología y métodos.", "keyLeaders": "Líder 1, Líder 2", "relationships": "Relaciones con otras facciones (ej: 'Aliados con X, enemigos de Y')." },
-    { "name": "Nombre de la Facción 2", "description": "Descripción de la facción 2.", "keyLeaders": "Líder 3", "relationships": "Relaciones de la facción 2." }
+    { "name": "Nombre de la Facción 2", "description": "Descripción de la facción 2.", "keyLeaders": "Líder 3", "relationships": "Relaciones de la facción 2." },
+    { "name": "Nombre de la Facción 3", "description": "Descripción de la facción 3.", "keyLeaders": "Líder 4", "relationships": "Relaciones de la facción 3." }
   ],
   "glossary": [
     { "term": "Término Clave 1", "definition": "Definición del término clave 1, relevante para el mundo." },
-    { "term": "Término Clave 2", "definition": "Definición del término clave 2." }
+    { "term": "Término Clave 2", "definition": "Definición del término clave 2." },
+    { "term": "Término Clave 3", "definition": "Definición del término clave 3." }
   ],
   "importantItems": [
     { "name": "Objeto Importante 1", "description": "Descripción del objeto, su historia o apariencia.", "properties": "Efectos o habilidades del objeto." },
-    { "name": "Objeto Importante 2", "description": "Descripción del objeto 2.", "properties": "Efectos del objeto 2." }
+    { "name": "Objeto Importante 2", "description": "Descripción del objeto 2.", "properties": "Efectos del objeto 2." },
+    { "name": "Objeto Importante 3", "description": "Descripción del objeto 3.", "properties": "Efectos del objeto 3." }
   ],
   "houseRules": [
-    { "title": "Regla de la Casa 1", "rule": "Descripción de una mecánica de juego única para este mundo." }
+    { "title": "Regla de la Casa 1", "rule": "Descripción de una mecánica de juego única para este mundo." },
+    { "title": "Regla de la Casa 2", "rule": "Descripción de otra mecánica de juego." },
+    { "title": "Regla de la Casa 3", "rule": "Descripción de una tercera mecánica de juego." }
   ],
   "adventures": [
     { "name": "Nombre de la Aventura 1", "premise": "La premisa o gancho inicial de la aventura 1." },
