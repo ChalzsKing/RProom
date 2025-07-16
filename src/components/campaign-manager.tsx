@@ -29,7 +29,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, Bot, MapPin, Users, Book, Gem, ScrollText, Briefcase } from 'lucide-react';
+import { Plus, Pencil, Trash2, Bot, MapPin, Users, Book, Gem, ScrollText, Briefcase, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ManageNpcs } from './manage-npcs';
 import { ManageLocation } from './manage-location';
@@ -37,7 +37,8 @@ import { ManageFaction } from './manage-faction';
 import { ManageGlossaryTerm } from './manage-glossary-term';
 import { ManageImportantItem } from './manage-important-item';
 import { ManageHouseRule } from './manage-house-rule';
-import { ManageAdventure } from './manage-adventure'; // Reusing existing component
+import { ManageAdventure } from './manage-adventure';
+import { Label } from './ui/label';
 
 const campaignSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
@@ -67,16 +68,18 @@ const worldTones = [
 export function CampaignManager({ campaign, children }: CampaignManagerProps) {
   const { 
     updateCampaign, 
-    campaignNpcs, deleteCampaignNpc,
-    locations, deleteLocation,
-    factions, deleteFaction,
+    addCampaignNpc, campaignNpcs, deleteCampaignNpc,
+    addLocation, locations, deleteLocation,
+    addFaction, factions, deleteFaction,
     glossary, deleteGlossaryTerm,
     importantItems, deleteImportantItem,
     houseRules, deleteHouseRule,
-    addAdventure, // For the 'Aventuras' tab
+    addAdventure,
   } = useChat();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [isGeneratingWorld, setIsGeneratingWorld] = useState(false);
 
   const form = useForm<CampaignFormValues>({
     resolver: zodResolver(campaignSchema),
@@ -96,7 +99,8 @@ export function CampaignManager({ campaign, children }: CampaignManagerProps) {
         uniqueFeatures: campaign.uniqueFeatures,
         worldTone: campaign.worldTone,
       });
-      setActiveTab('general'); // Reset to general tab when opening
+      setActiveTab('general');
+      setAiPrompt('');
     }
   }, [campaign, form, open]);
 
@@ -104,6 +108,46 @@ export function CampaignManager({ campaign, children }: CampaignManagerProps) {
     updateCampaign(campaign.id, values);
     setOpen(false);
   }
+
+  const handleGenerateWorld = async () => {
+    if (!aiPrompt.trim()) {
+      toast.warning('Por favor, introduce una idea para el mundo.');
+      return;
+    }
+    setIsGeneratingWorld(true);
+    const toastId = toast.loading('Generando el mundo... Esto puede tardar un poco.');
+
+    try {
+      const response = await fetch('/api/generate-world', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: aiPrompt }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al generar el mundo');
+      }
+
+      const data = await response.json();
+
+      // Update form fields
+      form.setValue('worldDescription', data.worldDescription, { shouldValidate: true });
+      form.setValue('uniqueFeatures', data.uniqueFeatures, { shouldValidate: true });
+
+      // Add generated content to the campaign
+      data.campaignNpcs?.forEach((npc: any) => addCampaignNpc(campaign.id, npc));
+      data.locations?.forEach((loc: any) => addLocation(campaign.id, loc));
+      data.factions?.forEach((fac: any) => addFaction(campaign.id, fac));
+      data.adventures?.forEach((adv: any) => addAdventure(campaign.id, adv));
+
+      toast.success('¡Mundo generado con éxito! Revisa las pestañas.', { id: toastId });
+    } catch (error: any) {
+      toast.error(`Error: ${error.message}`, { id: toastId });
+    } finally {
+      setIsGeneratingWorld(false);
+    }
+  };
 
   const handleDeleteNpc = (npcId: string) => {
     if (window.confirm('¿Estás seguro de que quieres eliminar este PNJ de campaña?')) {
@@ -162,7 +206,26 @@ export function CampaignManager({ campaign, children }: CampaignManagerProps) {
             <TabsTrigger value="adventures">Aventuras</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="general" className="flex-1 overflow-y-auto pr-4 mt-4">
+          <TabsContent value="general" className="flex-1 overflow-y-auto pr-4 mt-4 space-y-6">
+            <div className="space-y-2 p-4 border rounded-lg bg-secondary/50">
+              <Label htmlFor="ai-world-prompt" className="flex items-center gap-2 font-semibold">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Generador de Mundo con IA
+              </Label>
+              <Textarea
+                id="ai-world-prompt"
+                placeholder="Idea del mundo, ej: 'Un mundo post-apocalíptico donde la naturaleza ha reclamado las ciudades y las tribus luchan con tecnología antigua'"
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                className="resize-y"
+              />
+              <Button onClick={handleGenerateWorld} disabled={isGeneratingWorld} className="w-full">
+                {isGeneratingWorld ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                Generar Mundo Completo
+              </Button>
+              <p className="text-xs text-muted-foreground text-center pt-1">Esto generará descripción, características, PNJs, lugares, facciones y 3 aventuras.</p>
+            </div>
+
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
