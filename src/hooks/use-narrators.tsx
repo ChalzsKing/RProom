@@ -20,38 +20,31 @@ export function useNarrators() {
     defaultNarrators
   );
   
-  // Initialize activeNarrator using a function, which runs only once on mount
-  const [activeNarrator, setActiveNarratorState] = useState<Narrator | null>(() => {
-    if (typeof window === 'undefined') return null; // Prevent localStorage access on SSR
-    const activeId = localStorage.getItem(ACTIVE_NARRATOR_ID_KEY);
-    // Use defaultNarrators for initial lookup, as `narrators` from useLocalStorage might not be loaded yet.
-    const found = defaultNarrators.find(n => n.id === activeId);
-    return found || defaultNarrators[0];
-  });
+  const [activeNarrator, setActiveNarratorState] = useState<Narrator | null>(null);
 
-  // Effect to sync activeNarrator with loaded narrators from localStorage
-  // This effect should only run when `isNarratorsLoaded` or `narrators` (the list) changes.
-  // It updates `activeNarrator` if the current one is no longer valid or if it needs to be set.
+  // Effect to initialize activeNarrator from localStorage or set a default
   useEffect(() => {
     if (isNarratorsLoaded && narrators.length > 0) {
-      const currentActiveIdInStorage = localStorage.getItem(ACTIVE_NARRATOR_ID_KEY);
-      const foundInLoaded = narrators.find(n => n.id === currentActiveIdInStorage);
-
-      if (foundInLoaded && activeNarrator?.id !== foundInLoaded.id) {
-        // If a valid active narrator is found in loaded list, and it's different from current state
-        setActiveNarratorState(foundInLoaded);
-      } else if (!foundInLoaded && activeNarrator?.id !== narrators[0].id) {
-        // If no active narrator was found in localStorage or it's invalid,
-        // and the current activeNarrator state is not already the first one
-        setActiveNarratorState(narrators[0]);
-        localStorage.setItem(ACTIVE_NARRATOR_ID_KEY, narrators[0].id);
+      const activeId = localStorage.getItem(ACTIVE_NARRATOR_ID_KEY);
+      const found = narrators.find(n => n.id === activeId);
+      const currentActive = found || narrators[0];
+      
+      // Only update state if it's actually different to prevent loops
+      if (activeNarrator?.id !== currentActive.id) {
+        setActiveNarratorState(currentActive);
+        // If the found narrator was invalid, update localStorage with the default
+        if (!found) {
+          localStorage.setItem(ACTIVE_NARRATOR_ID_KEY, currentActive.id);
+        }
       }
-    } else if (isNarratorsLoaded && narrators.length === 0 && activeNarrator !== null) {
-      // If narrators become empty, clear activeNarrator
-      setActiveNarratorState(null);
-      localStorage.removeItem(ACTIVE_NARRATOR_ID_KEY);
+    } else if (isNarratorsLoaded && narrators.length === 0) {
+      // Handle case where there are no narrators
+      if (activeNarrator !== null) {
+        setActiveNarratorState(null);
+        localStorage.removeItem(ACTIVE_NARRATOR_ID_KEY);
+      }
     }
-  }, [isNarratorsLoaded, narrators]); // Removed activeNarrator from dependencies to prevent loop
+  }, [isNarratorsLoaded, narrators, activeNarrator]);
 
   const setActiveNarrator = useCallback((narratorId: string) => {
     const selectedNarrator = narrators.find(n => n.id === narratorId);

@@ -4,7 +4,7 @@ import React, { createContext, useState, useContext, ReactNode, useEffect, useCa
 import { LoadingScreen } from '@/components/loading-screen';
 import { useCampaigns } from '@/hooks/use-campaigns';
 import { useNarrators } from '@/hooks/use-narrators';
-import { useChatHistory } from '@/hooks/use-chat-history'; // Corrected this line
+import { useChatHistory } from '@/hooks/use-chat-history';
 import { useSceneStates } from '@/hooks/use-scene-states';
 
 // Type Definitions (assuming these are already defined correctly elsewhere or will be added)
@@ -283,7 +283,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       // Only initialize if we have campaigns but no active session
       if (campaigns.length > 0 && !activeSessionId) {
         const firstSessionId = campaigns[0]?.adventures?.[0]?.sessions?.[0]?.id;
-        if (firstSessionId) {
+        if (firstSessionId && activeNarrator) { // Ensure activeNarrator is not null
           setActiveSessionId(firstSessionId);
           initializeSessionHistory(firstSessionId, activeNarrator);
         }
