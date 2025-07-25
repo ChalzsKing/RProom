@@ -21,7 +21,7 @@ export function SidebarNav() {
   const {
     activeProvider, setActiveProvider,
     campaigns = [], // Default empty array if undefined
-    addCampaign, deleteCampaign, addSession,
+    addCampaign, deleteCampaign, addSession, addAdventure, // <--- Añadido addAdventure aquí
     activeSessionId, setActiveSessionId, getActiveAdventure,
     narrators = [], // Default empty array if undefined
     activeNarrator, setActiveNarrator,
